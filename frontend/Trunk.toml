@@ -1,0 +1,15 @@
+[serve]
+address = "127.0.0.1"
+port = 8000
+
+[[proxy]]
+rewrite = "/ws"
+backend = "ws://127.0.0.1:8080/ws"
+ws = true
+
+[[proxy]]
+rewrite = "/api"
+backend = "http://127.0.0.1:8080/api"
+
+[watch]
+ignore = ["analyzer_target"]

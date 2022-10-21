@@ -1,0 +1,19 @@
+[package]
+name = "mailcrab-frontend"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+yew = "0.19"
+gloo-net = "0.2"
+gloo-console = "0.2"
+serde = { version = "1.0", features = ["derive"] }
+wasm-bindgen-futures = "0.4"
+futures = "0.3"
+serde-json-wasm = "0.4"
+base64 = "0.13"
+web-sys = "0.3"
+js-sys = "0.3"
+timeago = "0.3"
+yew-hooks = "0.1"

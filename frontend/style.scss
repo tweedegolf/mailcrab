@@ -1,0 +1,356 @@
+html {
+  box-sizing: border-box;
+  font-size: 16px;
+  font-family: Inter, sans-serif;
+}
+
+body {
+  font-size: 16px;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+body, h1, h2, h3, h4, h5, h6, p, ol, ul {
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+}
+
+ol, ul {
+  list-style: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+input, button, select {
+  font-family: Inter, sans-serif;
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-weight: 100 900;
+  font-display: swap;
+  font-style: normal;
+  font-named-instance: 'Regular';
+  src: url("/fonts/Inter-roman.var.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: 'Inter';
+  font-weight: 100 900;
+  font-display: swap;
+  font-style: italic;
+  font-named-instance: 'Italic';
+  src: url("/fonts/Inter-italic.var.woff2") format("woff2");
+}
+
+$grey: #ccc;
+$border-grey: #eee;
+$light: #f6f6f6;
+$red: #e00;
+$light-red: #fffafa;
+
+html, body {
+  height: 100%;
+  max-height: 100vh;
+}
+
+header {
+  height: 4rem;
+  background: $light-red;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  h1 {
+    line-height: 4rem;
+    padding-left: 3.5rem;
+    margin-left: 1rem;
+    background: url('/img/logo.svg') no-repeat center left;
+    background-size: 3rem;
+    font-weight: 300;
+
+    span {
+      color: #d40000;
+      font-weight: 400;
+    }
+  }
+
+  button {
+    margin-right: 1rem;
+    padding: 0 1rem 0 1.9rem;
+    border: 1px solid $border-grey;
+    cursor: pointer;
+    border-radius: 0;
+    font-weight: 400;
+    font-size: 0.9rem;
+    height: 2.5rem;
+    line-height: 2rem;
+    background: white url('/img/trash.svg') no-repeat top 0.6rem left 0.75rem;
+    background-size: 14px;
+
+    span {
+      font-size: 0.8rem;
+      margin-left: 0.25rem;
+      font-weight: 500;
+    }
+
+    &:hover {
+      border-color: $red;
+    }
+  }
+}
+
+.main {
+  height: calc(100vh - 4rem);
+  display: flex;
+  flex: 1;
+}
+
+.empty {
+  margin: 4rem 0;
+  text-align: center;
+  font-size: 3rem;
+  font-weight: 200;
+  color: $grey;
+}
+
+@keyframes slide-down {
+  from {
+    padding: 0 0.75rem 0 3.5rem;
+    max-height: 0;
+  }
+  to {
+    padding: 0.75rem 0.75rem 0.75rem 3.5rem;
+    max-height: 5rem;
+  }
+}
+
+.list {
+  border-right: 1px solid $border-grey;
+  width: 30%;
+  height: 100%;
+  min-width: 40rem;
+  max-width: 50rem;
+  overflow-y: auto;
+
+  ul {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  li {
+    padding: 0.75rem 0.75rem 0.75rem 3.5rem;
+    border-bottom: 1px solid $border-grey;
+    line-height: 1.6;
+    cursor: pointer;
+    transition: all 150ms ease-in;
+    animation: slide-down 300ms ease-in;
+    overflow: hidden;
+    font-size: 0.9rem;
+    background: white url('/img/envelope.svg') no-repeat center left 0.75rem;
+    background-size: 2rem;
+
+    &:last-child {
+      border-top: 1px solid $border-grey;
+    }
+
+    &:hover, &.selected {
+      background-color: $light-red;
+    }
+
+    &.opened {
+      opacity: 0.5;
+      background-image: url('/img/envelope-open.svg');
+    }
+
+    &.selected {
+      color: black !important;
+      font-weight: 500;
+      background-image: url('/img/envelope-open-text.svg');
+    }
+
+    .head {
+      display: flex;
+      justify-content: space-between;
+
+      .name {
+        font-weight: 500;
+      }
+
+      .name + .email {
+        margin-left: 0.5rem;
+        color: rgba(black, 0.3);
+        
+        &::before {
+          content: '<';
+        }
+
+        &::after {
+          content: '>';
+        }
+      }
+    }
+
+    .preview {
+      display: flex;
+      justify-content: space-between;
+
+      .subject {
+        color: rgba(black, 0.9);
+        display: block;
+      }
+
+      .size {
+        margin-left: 0.5rem;
+        color: rgba(black, 0.3);
+      }
+    }
+  }
+}
+
+.view {
+  background-color: $light;
+  padding: 1rem;
+  flex: 1;
+  overflow-x: hidden;
+  border-top: 1px solid $border-grey;
+
+  .view-inner {
+    background-color: white;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+    ul {
+      display: block;
+      background-color: $light;
+      display: flex;
+
+      li {
+        button {
+          font-size: 1rem;
+          padding: 0.75rem 1.5rem;
+          margin-right: 0.3rem;
+          cursor: pointer;
+          border: none;
+          background-color: darken($light, 5%);
+          transition: all 150ms ease-in;
+
+          &:hover, &.active {
+            background: white;
+          }
+        }
+
+        &.delete {
+          margin-left: auto;
+
+          button {
+            margin-right: 0;
+            margin-bottom: 0.25rem;
+            padding: 0.5rem 1.5rem 0.5rem 2rem;
+            background: white url('/img/trash.svg') no-repeat center left 1rem;
+            background-size: 12px;
+            border: 1px solid $grey;
+
+            &:hover {
+              border: 1px solid $red;
+            }
+          }
+        }
+      }
+    }
+
+    .tab-content {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      overflow-x: hidden;
+      font-size: 0.9rem;
+
+      table {
+        border-collapse: collapse;
+
+        th {
+          font-weight: 500;
+          text-align: left;
+          width: 10rem;
+        }
+
+        td, th {
+          padding: 0.5rem;
+          border-bottom: 1px solid lighten($grey, 10%);
+        }
+
+        .name {
+          font-weight: 500;
+        }
+  
+        .name + .email {
+          color: rgba(black, 0.8);
+          
+          &::before {
+            content: ' <';
+          }
+  
+          &::after {
+            content: '>';
+          }
+        }
+      }
+
+      .attachments {
+        a {
+          display: inline-block;
+          padding: 0.5rem 0.5rem 0.5rem 2rem;
+          margin: 0.75rem 0.5rem 0.75rem 0;
+          font-size: 0.9rem;
+          border: 1px solid $border-grey;
+          text-decoration: none;
+          color: black;
+          transition: all 150ms ease-in;
+          background: white url('/img/file.svg') no-repeat center left 0.5rem;
+          background-size: 1rem;
+
+          &.application-pdf {
+            background-image: url('/img/file-pdf.svg') 
+          }
+
+          .size {
+            margin-left: 0.5rem;
+            font-size: 0.8rem;
+            color: rgba(black, 0.7);
+          }
+
+          &:hover {
+            background-color: $light-red;
+          }
+        }
+      }
+
+      pre {
+        margin: 0;
+        padding: 0;
+      }
+
+      .body {
+        width: 100%;
+        flex: 1;
+        padding: 0;
+
+        iframe {
+          border: 1px solid $border-grey;
+          width: 100%;
+          height: 100%;
+          padding: 0.5rem;
+        }
+      }
+    }
+  }
+}

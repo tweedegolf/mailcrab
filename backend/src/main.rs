@@ -1,13 +1,15 @@
-use crate::web_server::http_serve;
 use std::{
     collections::HashMap,
     env,
     sync::{Arc, RwLock},
 };
+use tokio::signal;
 use tokio::sync::broadcast::Receiver;
 use tracing::{event, Level};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use types::{MailMessage, MessageId};
+
+use crate::web_server::http_server;
 
 mod mail_server;
 mod types;
@@ -55,7 +57,7 @@ async fn main() {
     });
 
     // receive and broadcast mail messages
-    let smtp_join = tokio::spawn(async move {
+    let smtp_join = tokio::task::spawn(async move {
         if let Err(e) = mail_server::smtp_listen(("0.0.0.0", smtp_port), tx) {
             eprintln!("MailCrab error: {}", e);
         }
@@ -63,7 +65,7 @@ async fn main() {
 
     // store broadcasted messages in a key/value store
     let state = app_state.clone();
-    let storage_join = tokio::spawn(async move {
+    let storage_join = tokio::task::spawn(async move {
         loop {
             if let Ok(message) = storage_rx.recv().await {
                 if let Ok(mut storage) = state.storage.write() {
@@ -73,11 +75,19 @@ async fn main() {
         }
     });
 
-    // serve a web application to retrieve and view mail messages
-    http_serve(app_state, http_port).await;
+    let http_join = tokio::task::spawn(async move {
+        http_server(app_state, http_port).await;
+    });
 
-    smtp_join.abort();
+    signal::ctrl_c()
+        .await
+        .expect("failed to install Ctrl+C handler");
+
     storage_join.abort();
+    smtp_join.abort();
+    http_join.abort();
+
+    println!("Aborted!");
 }
 
 #[cfg(test)]

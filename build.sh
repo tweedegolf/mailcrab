@@ -10,6 +10,7 @@ cp target/release/mailcrab-backend target/amd64
 
 cd ../frontend
 
+rustup target add wasm32-unknown-unknown
 trunk build
 
 cd ..

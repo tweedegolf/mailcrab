@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-# export PATH="$PATH:$HOME/.cargo/bin"
-
 cargo install cross --git https://github.com/cross-rs/cross
 
 cd backend
@@ -23,4 +20,4 @@ trunk build
 cd ..
 
 docker buildx create --use
-docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:1.0
+docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest

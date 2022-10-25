@@ -1,6 +1,7 @@
-FROM debian:bullseye-slim
+FROM alpine:3.16
 ARG TARGETARCH
-WORKDIR /usr/local/bin
-COPY ./frontend/dist /usr/local/bin/dist
-COPY "./backend/target/$TARGETARCH" /usr/local/bin/mailcrab
-CMD ["/usr/local/bin/mailcrab"]
+WORKDIR /app
+COPY ./frontend/dist /app/dist
+COPY "./backend/target/$TARGETARCH" /app/mailcrab
+CMD ["/app/mailcrab"]
+EXPOSE 8080 2525

@@ -55,19 +55,19 @@ jobs:
       with:
         use-cross: true
         command: build
-        args: --release --target x86_64-unknown-linux-gnu --manifest-path backend/Cargo.toml
+        args: --release --target x86_64-unknown-linux-musl --manifest-path backend/Cargo.toml
 
     - name: Build target arm64
       uses: actions-rs/cargo@v1
       with:
         use-cross: true
         command: build
-        args: --release --target aarch64-unknown-linux-gnu --manifest-path backend/Cargo.toml
+        args: --release --target aarch64-unknown-linux-musl --manifest-path backend/Cargo.toml
 
     - name: Copy binaries 
       run: |
-        cp target/aarch64-unknown-linux-gnu/release/mailcrab-backend target/arm64
-        cp target/x86_64-unknown-linux-gnu/release/mailcrab-backend target/amd64
+        cp target/aarch64-unknown-linux-musl/release/mailcrab-backend target/arm64
+        cp target/x86_64-unknown-linux-musl/release/mailcrab-backend target/amd64
       working-directory: ./backend
 
     - name: Build frontend
@@ -75,4 +75,4 @@ jobs:
       working-directory: ./frontend
 
     - name: Build docker image
-      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest
+      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:alpine-latest

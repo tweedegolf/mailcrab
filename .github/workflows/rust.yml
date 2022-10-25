@@ -15,10 +15,23 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - uses: actions/cache@v3
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          backend/target/
+          frontend/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
     - uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-        
+        target: wasm32-unknown-unknown
+        components: cross, trunk
+
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
     
@@ -31,9 +44,9 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-    - uses: jetli/trunk-action@v0.1.0
-      with:
-        version: 'latest'
+    # - uses: jetli/trunk-action@v0.1.0
+    #   with:
+    #     version: 'latest'
 
     - name: Build
       run: ./build.sh

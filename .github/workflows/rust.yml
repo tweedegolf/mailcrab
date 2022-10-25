@@ -30,7 +30,6 @@ jobs:
       with:
         toolchain: stable
         target: wasm32-unknown-unknown
-        components: cross, trunk
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v1
@@ -44,9 +43,35 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-    # - uses: jetli/trunk-action@v0.1.0
-    #   with:
-    #     version: 'latest'
+    - uses: jetli/trunk-action@v0.1.0
+      with:
+        version: 'latest'
 
-    - name: Build
-      run: ./build.sh
+    - name: Build target amd64
+      working-directory: ./backend
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release
+
+    - name: Build target arm64
+      uses: actions-rs/cargo@v1
+      working-directory: ./backend
+      with:
+        use-cross: true
+        command: build
+        args: --release --target aarch64-unknown-linux-gnu
+
+    - name: Copy binaries 
+      working-directory: ./backend
+      run: |
+        cp target/aarch64-unknown-linux-gnu/release/mailcrab-backend target/arm64
+        cp target/release/mailcrab-backend target/amd64
+
+    - name: Build frontend
+      working-directory: ./frontend
+      run: trunk build
+
+    - name: Build docker image
+      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest

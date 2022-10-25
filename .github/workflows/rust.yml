@@ -3,8 +3,6 @@ name: Rust
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
 
 env:
   CARGO_TERM_COLOR: always
@@ -75,4 +73,4 @@ jobs:
       working-directory: ./frontend
 
     - name: Build docker image
-      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:alpine-latest
+      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest

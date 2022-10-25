@@ -30,7 +30,7 @@ The backend also accepts a few commands over the websocket, to mark a message as
 To run MailCrab only docker is required. Start MailCrab using the following command:
 
 ```
-docker run --rm -p 127.0.0.1:8080:8080 -p 127.0.0.1:2525:2525 marlonb/mailcrab:1.0
+docker run --rm -p 127.0.0.1:8080:8080 -p 127.0.0.1:2525:2525 marlonb/mailcrab:latest
 ```
 
 Open a browser and navigate to [http://localhost:8080](http://localhost:8080) to view the web interface.
@@ -38,7 +38,7 @@ Open a browser and navigate to [http://localhost:8080](http://localhost:8080) to
 The default SMTP port is 2525, the default HTTP port is 8080. You can configure the SMTP and HTTP port using environment variables (`SMTP_PORT` and `HTTP_PORT`), or by exposing them on different ports using docker:
 
 ```
-docker run --rm -p 127.0.0.1:3000:8080 -p 127.0.0.1:1025:2525 marlonb/mailcrab:1.0
+docker run --rm -p 127.0.0.1:3000:8080 -p 127.0.0.1:1025:2525 marlonb/mailcrab:latest
 ```
 
 Usage in a `docker-compose.yml` file:
@@ -47,7 +47,7 @@ Usage in a `docker-compose.yml` file:
 version: "3.8"
 services:
     mailcrab:
-        image: marlonb/mailcrab:1.0
+        image: marlonb/mailcrab:latest
         ports:
             - "127.0.0.1:8080:8080"
             - "127.0.0.1:2525:2525"

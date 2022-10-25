@@ -15,7 +15,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - uses: actions/cache@v3
+    - name: Cache build assets
+      uses: actions/cache@v3
       with:
         path: |
           ~/.cargo/bin/
@@ -26,7 +27,8 @@ jobs:
           frontend/target/
         key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
-    - uses: actions-rs/toolchain@v1
+    - name: Configure Rust toolchain
+      uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
         target: wasm32-unknown-unknown
@@ -43,35 +45,34 @@ jobs:
         username: ${{ secrets.DOCKER_HUB_USERNAME }}
         password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-    - uses: jetli/trunk-action@v0.1.0
+    - name: Download trunk
+      uses: jetli/trunk-action@v0.1.0
       with:
         version: 'latest'
 
     - name: Build target amd64
-      working-directory: ./backend
       uses: actions-rs/cargo@v1
       with:
         use-cross: true
         command: build
-        args: --release
+        args: --release --manifest-path backend/Cargo.toml
 
     - name: Build target arm64
       uses: actions-rs/cargo@v1
-      working-directory: ./backend
       with:
         use-cross: true
         command: build
-        args: --release --target aarch64-unknown-linux-gnu
+        args: --release --target aarch64-unknown-linux-gnu --manifest-path backend/Cargo.toml
 
     - name: Copy binaries 
-      working-directory: ./backend
       run: |
         cp target/aarch64-unknown-linux-gnu/release/mailcrab-backend target/arm64
         cp target/release/mailcrab-backend target/amd64
+      working-directory: ./backend
 
     - name: Build frontend
-      working-directory: ./frontend
       run: trunk build
+      working-directory: ./frontend
 
     - name: Build docker image
       run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest

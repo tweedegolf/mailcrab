@@ -10,6 +10,3 @@ ws = true
 [[proxy]]
 rewrite = "/api"
 backend = "http://127.0.0.1:8080/api"
-
-[watch]
-ignore = ["analyzer_target"]

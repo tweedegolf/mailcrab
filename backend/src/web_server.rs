@@ -109,7 +109,7 @@ async fn handle_error(_err: io::Error) -> impl IntoResponse {
     (StatusCode::INTERNAL_SERVER_ERROR, "Error")
 }
 
-pub async fn http_serve(app_state: Arc<AppState>, port: u16) {
+pub async fn http_server(app_state: Arc<AppState>, port: u16) {
     let static_serve = ServeDir::new("dist").append_index_html_on_directories(true);
 
     let app = Router::new()

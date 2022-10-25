@@ -16,4 +16,4 @@ EXPOSE 3000
 WORKDIR /usr/local/bin
 COPY --from=builder /usr/src/frontend/dist /usr/local/bin/dist
 COPY --from=builder /usr/src/backend/target/release/mailcrab-backend /usr/local/bin/mailcrab
-CMD ["/bin/sh", "-c", "/usr/local/bin/mailcrab"]
+CMD ["/usr/local/bin/mailcrab"]

@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     env,
-    sync::{Arc, RwLock},
+    sync::{Arc, RwLock}, process,
 };
 use tokio::signal;
 use tokio::sync::broadcast::Receiver;
@@ -57,7 +57,7 @@ async fn main() {
     });
 
     // receive and broadcast mail messages
-    let smtp_join = tokio::task::spawn(async move {
+    tokio::spawn(async move {
         if let Err(e) = mail_server::smtp_listen(("0.0.0.0", smtp_port), tx) {
             eprintln!("MailCrab error: {}", e);
         }
@@ -65,7 +65,7 @@ async fn main() {
 
     // store broadcasted messages in a key/value store
     let state = app_state.clone();
-    let storage_join = tokio::task::spawn(async move {
+    tokio::spawn(async move {
         loop {
             if let Ok(message) = storage_rx.recv().await {
                 if let Ok(mut storage) = state.storage.write() {
@@ -75,7 +75,7 @@ async fn main() {
         }
     });
 
-    let http_join = tokio::task::spawn(async move {
+    tokio::task::spawn(async move {
         http_server(app_state, http_port).await;
     });
 
@@ -83,11 +83,7 @@ async fn main() {
         .await
         .expect("failed to install Ctrl+C handler");
 
-    storage_join.abort();
-    smtp_join.abort();
-    http_join.abort();
-
-    println!("Aborted!");
+    process::exit(0);
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-![MailCrab logo](https://raw.githubusercontent.com/tweedegolf/mailcrab/main/frontend/img/mailcrab.svg width=400)
+![MailCrab logo](https://raw.githubusercontent.com/tweedegolf/mailcrab/main/frontend/img/mailcrab.svg | width=400)
 
 # MailCrab
 

@@ -1,4 +1,4 @@
-![MailCrab Logo](https://github.com/tweedegolf/mailcrab/blob/master/frontend/img/mailcrab.svg?raw=true)
+<img src="https://raw.githubusercontent.com/tweedegolf/mailcrab/main/frontend/img/mailcrab.svg" width="400" alt="MailCrab logo" />
 
 # MailCrab
 
@@ -8,14 +8,19 @@ Inspired by [MailHog](https://github.com/mailhog/MailHog) and [MailCatcher](http
 
 MailCrab was created as an exercise in Rust, trying out [Axum](https://axum.rs/) and functional components with [Yew](https://yew.rs/), but most of all because it is really enjoyable to write Rust code.
 
+## TLDR
+```
+docker run --rm -p 127.0.0.1:8080:8080 -p 127.0.0.1:2525:2525 marlonb/mailcrab:latest
+```
+
 ## Features
 
 - Accept-all SMTP server
 - Web interface to view and inspect all incoming email
-- View formatted email, download attachments, view headers or the complete raw email data
-- Runs on multiple platforms
+- View formatted mail, download attachments, view headers or the complete raw mail contents
+- Runs on all `amd64` and `arm64` platforms using docker
 
-![MailCrab Logo](https://github.com/tweedegolf/mailcrab/blob/master/frontend/img/screen.png?raw=true)
+![MailCrab screenshot](https://raw.githubusercontent.com/tweedegolf/mailcrab/main/frontend/img/screen.png)
 
 ## Technical overview
 

@@ -52,7 +52,7 @@ input, button, select {
 $grey: #ccc;
 $border-grey: #eee;
 $light: #f6f6f6;
-$red: #e00;
+$red: #f74c00;
 $light-red: #fffafa;
 
 html, body {
@@ -69,14 +69,14 @@ header {
 
   h1 {
     line-height: 4rem;
-    padding-left: 3.5rem;
-    margin-left: 1rem;
-    background: url('/img/logo.svg') no-repeat center left;
-    background-size: 3rem;
+    padding-left: 7.5rem;
+    background: url('/img/mailcrab.svg') no-repeat center left;
+    background-size: 8rem;
     font-weight: 300;
+    font-size: 2.5rem;
 
     span {
-      color: #d40000;
+      color: $red;
       font-weight: 400;
     }
   }

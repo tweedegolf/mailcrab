@@ -9,7 +9,6 @@ Inspired by [MailHog](https://github.com/mailhog/MailHog) and [MailCatcher](http
 MailCrab was created as an exercise in Rust, trying out [Axum](https://axum.rs/) and functional components with [Yew](https://yew.rs/), but most of all because it is really enjoyable to write Rust code.
 
 ## TLDR
-
 ```
 docker run --rm -p 127.0.0.1:8080:8080 -p 127.0.0.1:2525:2525 marlonb/mailcrab:latest
 ```

@@ -483,6 +483,7 @@ dependencies = [
  "futures",
  "gloo-console",
  "gloo-net",
+ "gloo-utils",
  "js-sys",
  "serde",
  "serde-json-wasm",

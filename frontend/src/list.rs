@@ -1,7 +1,7 @@
 use crate::types::MailMessageMetadata;
 use js_sys::Date;
 use timeago::Formatter;
-use yew::{function_component, html, use_state, Callback, Properties};
+use yew::{function_component, html, use_state, Callback, Properties, use_effect};
 use yew_hooks::use_interval;
 
 #[derive(Properties, PartialEq)]
@@ -28,6 +28,15 @@ pub fn list(props: &MessageListProps) -> Html {
             },
             10 * 1000,
         );
+    }
+
+    {
+      let count = props.messages.iter().filter(|m| !m.opened).count();
+      use_effect(move || {
+          gloo_utils::document().set_title(&format!("MailCrab ({})", count));
+
+          || ()
+      });
     }
 
     props

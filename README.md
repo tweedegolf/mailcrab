@@ -62,3 +62,24 @@ services:
             - "127.0.0.1:2525:2525"
         networks: [default]
 ```
+
+## Development
+
+Install [Rust](https://www.rust-lang.org/learn/get-started) and (Trunk)[https://trunkrs.dev/]
+
+```
+# clone the code
+git clone git@github.com:tweedegolf/mailcrab.git
+
+# start the backend
+cd backend
+cargo run
+
+# serve the frontend
+cd ../frontend
+trunk serve
+
+# optionally send test messages in an interval
+cd ../backend
+cargo test
+```

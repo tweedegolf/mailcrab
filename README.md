@@ -6,7 +6,7 @@ Email test server for development, written in Rust.
 
 Inspired by [MailHog](https://github.com/mailhog/MailHog) and [MailCatcher](https://mailcatcher.me/).
 
-MailCrab was created as an exercise in Rust, trying out [Axum](https://axum.rs/) and functional components with [Yew](https://yew.rs/), but most of all because it is really enjoyable to write Rust code.
+MailCrab was created as an exercise in Rust, trying out [Axum](https://github.com/tokio-rs/axum) and functional components with [Yew](https://yew.rs/), but most of all because it is really enjoyable to write Rust code.
 
 ## TLDR
 ```

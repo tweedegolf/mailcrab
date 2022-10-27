@@ -1,4 +1,4 @@
-![MailCrab logo](https://raw.githubusercontent.com/tweedegolf/mailcrab/blob/master/frontend/img/maincrab.svg)
+![MailCrab logo](https://raw.githubusercontent.com/tweedegolf/mailcrab/main/frontend/img/mailcrab.svg)
 
 # MailCrab
 
@@ -15,7 +15,7 @@ MailCrab was created as an exercise in Rust, trying out [Axum](https://axum.rs/)
 - View formatted email, download attachments, view headers or the complete raw email data
 - Runs on multiple platforms
 
-![MailCrab screenshot](https://raw.githubusercontent.com/tweedegolf/mailcrab/blob/master/frontend/img/screen.png)
+![MailCrab screenshot](https://raw.githubusercontent.com/tweedegolf/mailcrab/main/frontend/img/screen.png)
 
 ## Technical overview
 

@@ -38,8 +38,8 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let smtp_port: u16 = get_env_port("SMTP_PORT", 2525);
-    let http_port: u16 = get_env_port("HTTP_PORT", 8080);
+    let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
+    let http_port: u16 = get_env_port("HTTP_PORT", 1080);
 
     event!(
         Level::INFO,
@@ -99,7 +99,7 @@ mod test {
 
     #[test]
     fn receive_email() {
-        let addr = "127.0.0.1:2525";
+        let addr = "127.0.0.1:1025";
 
         let mut mailer = SmtpClient::new(addr, ClientSecurity::None)
             .unwrap()

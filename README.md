@@ -10,7 +10,7 @@ MailCrab was created as an exercise in Rust, trying out [Axum](https://axum.rs/)
 
 ## TLDR
 ```
-docker run --rm -p 127.0.0.1:8080:8080 -p 127.0.0.1:2525:2525 marlonb/mailcrab:latest
+docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
 ```
 
 ## Features
@@ -19,6 +19,7 @@ docker run --rm -p 127.0.0.1:8080:8080 -p 127.0.0.1:2525:2525 marlonb/mailcrab:l
 - Web interface to view and inspect all incoming email
 - View formatted mail, download attachments, view headers or the complete raw mail contents
 - Runs on all `amd64` and `arm64` platforms using docker
+- Just a 7.77 MB docker image
 
 ![MailCrab screenshot](https://raw.githubusercontent.com/tweedegolf/mailcrab/main/frontend/img/screen.png)
 
@@ -39,15 +40,15 @@ The backend also accepts a few commands over the websocket, to mark a message as
 To run MailCrab only docker is required. Start MailCrab using the following command:
 
 ```
-docker run --rm -p 127.0.0.1:8080:8080 -p 127.0.0.1:2525:2525 marlonb/mailcrab:latest
+docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
 ```
 
-Open a browser and navigate to [http://localhost:8080](http://localhost:8080) to view the web interface.
+Open a browser and navigate to [http://localhost:1080](http://localhost:1080) to view the web interface.
 
-The default SMTP port is 2525, the default HTTP port is 8080. You can configure the SMTP and HTTP port using environment variables (`SMTP_PORT` and `HTTP_PORT`), or by exposing them on different ports using docker:
+The default SMTP port is 1025, the default HTTP port is 1080. You can configure the SMTP and HTTP port using environment variables (`SMTP_PORT` and `HTTP_PORT`), or by exposing them on different ports using docker:
 
 ```
-docker run --rm -p 127.0.0.1:3000:8080 -p 127.0.0.1:1025:2525 marlonb/mailcrab:latest
+docker run --rm -p 3000:1080 -p 2525:1025 marlonb/mailcrab:latest
 ```
 
 Usage in a `docker-compose.yml` file:
@@ -58,8 +59,8 @@ services:
     mailcrab:
         image: marlonb/mailcrab:latest
         ports:
-            - "127.0.0.1:8080:8080"
-            - "127.0.0.1:2525:2525"
+            - "1080:1080"
+            - "1025:1025"
         networks: [default]
 ```
 

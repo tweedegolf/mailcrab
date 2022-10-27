@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
-    env,
-    sync::{Arc, RwLock}, process,
+    env, process,
+    sync::{Arc, RwLock},
 };
 use tokio::signal;
 use tokio::sync::broadcast::Receiver;

@@ -1,7 +1,7 @@
 use crate::types::MailMessageMetadata;
 use js_sys::Date;
 use timeago::Formatter;
-use yew::{function_component, html, use_state, Callback, Properties, use_effect};
+use yew::{function_component, html, use_effect, use_state, Callback, Properties};
 use yew_hooks::use_interval;
 
 #[derive(Properties, PartialEq)]
@@ -31,12 +31,12 @@ pub fn list(props: &MessageListProps) -> Html {
     }
 
     {
-      let count = props.messages.iter().filter(|m| !m.opened).count();
-      use_effect(move || {
-          gloo_utils::document().set_title(&format!("MailCrab ({})", count));
+        let count = props.messages.iter().filter(|m| !m.opened).count();
+        use_effect(move || {
+            gloo_utils::document().set_title(&format!("MailCrab ({})", count));
 
-          || ()
-      });
+            || ()
+        });
     }
 
     props
@@ -56,9 +56,9 @@ pub fn list(props: &MessageListProps) -> Html {
             };
 
             let ago = if message.time > *now {
-              std::time::Duration::from_secs(0)
+                std::time::Duration::from_secs(0)
             } else {
-              std::time::Duration::from_secs(*now - message.time)
+                std::time::Duration::from_secs(*now - message.time)
             };
 
             html! {

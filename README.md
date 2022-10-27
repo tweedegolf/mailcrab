@@ -65,7 +65,7 @@ services:
 
 ## Development
 
-Install [Rust](https://www.rust-lang.org/learn/get-started) and (Trunk)[https://trunkrs.dev/]
+Install [Rust](https://www.rust-lang.org/learn/get-started) and [Trunk](https://trunkrs.dev/)
 
 ```
 # clone the code
@@ -75,7 +75,7 @@ git clone git@github.com:tweedegolf/mailcrab.git
 cd backend
 cargo run
 
-# serve the frontend
+# serve the frontend (in a new terminal window)
 cd ../frontend
 trunk serve
 

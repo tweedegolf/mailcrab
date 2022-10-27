@@ -335,6 +335,9 @@ header {
       }
 
       pre {
+        overflow-x: hidden;
+        white-space: pre-wrap;
+        word-wrap: break-word;
         margin: 0;
         padding: 0;
       }

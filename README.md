@@ -1,3 +1,5 @@
+![MailCrab logo](https://raw.githubusercontent.com/tweedegolf/mailcrab/blob/master/frontend/img/maincrab.svg)
+
 # MailCrab
 
 Email test server for development, written in Rust.
@@ -12,6 +14,8 @@ MailCrab was created as an exercise in Rust, trying out [Axum](https://axum.rs/)
 - Web interface to view and inspect all incoming email
 - View formatted email, download attachments, view headers or the complete raw email data
 - Runs on multiple platforms
+
+![MailCrab screenshot](https://raw.githubusercontent.com/tweedegolf/mailcrab/blob/master/frontend/img/screen.png)
 
 ## Technical overview
 

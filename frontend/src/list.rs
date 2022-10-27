@@ -47,13 +47,17 @@ pub fn list(props: &MessageListProps) -> Html {
             let select = props.select.clone();
             let onclick = { Callback::from(move |_| select.emit(id.clone())) };
 
-            let class = if props.selected == message.id {
-                "selected"
+            let mut classes = vec![];
+            
+            if props.selected == message.id {
+                classes.push("selected");
             } else if message.opened {
-                "opened"
-            } else {
-                ""
-            };
+                classes.push("opened")
+            }
+
+            if message.attachments.len() > 0 {
+                classes.push("attachments");
+            } 
 
             let ago = if message.time > *now {
                 std::time::Duration::from_secs(0)
@@ -65,7 +69,7 @@ pub fn list(props: &MessageListProps) -> Html {
               <li
                 tabIndex="0"
                 onclick={onclick}
-                class={class}
+                class={classes.join(" ")}
               >
                 <span class="head">
                   <span class="from">

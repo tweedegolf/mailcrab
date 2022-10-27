@@ -211,6 +211,17 @@ header {
         color: rgba(black, 0.3);
       }
     }
+
+    &.attachments {
+      .subject::before {
+        content: ' ';
+        display: inline-block;
+        margin-right: 0.2rem;
+        width: 0.9rem;
+        height: 0.9rem;
+        background: url('/img/paperclip.svg') no-repeat center left;
+      }
+    }
   }
 }
 
@@ -309,9 +320,9 @@ header {
         a {
           display: inline-block;
           padding: 0.5rem 0.5rem 0.5rem 2rem;
-          margin: 0.75rem 0.5rem 0.75rem 0;
+          margin: 0.75rem 0.5rem 0 0;
           font-size: 0.9rem;
-          border: 1px solid $border-grey;
+          border: 1px solid $grey;
           text-decoration: none;
           color: black;
           transition: all 150ms ease-in;
@@ -346,6 +357,7 @@ header {
         width: 100%;
         flex: 1;
         padding: 0;
+        margin-top: 0.75rem;
 
         iframe {
           border: 1px solid $border-grey;

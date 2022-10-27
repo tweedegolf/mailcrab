@@ -488,6 +488,7 @@ dependencies = [
  "serde",
  "serde-json-wasm",
  "timeago",
+ "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
  "yew",

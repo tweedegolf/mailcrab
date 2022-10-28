@@ -4,7 +4,7 @@ use axum::{
         Path, WebSocketUpgrade,
     },
     http::StatusCode,
-    response::{IntoResponse, Html},
+    response::{Html, IntoResponse},
     routing::{get, get_service},
     Extension, Json, Router,
 };

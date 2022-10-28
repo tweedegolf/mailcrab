@@ -40,7 +40,7 @@ jobs:
       run: cargo build --verbose --manifest-path backend/Cargo.toml
 
     - name: Check code style
-      run: cargo fmt -- --check --manifest-path backend/Cargo.toml
+      run: cargo fmt --manifest-path backend/Cargo.toml -- --check
 
     - name: Build frontend
       run: trunk build

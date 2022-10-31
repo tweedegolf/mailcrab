@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
-    env,
-    sync::{Arc, RwLock}, process,
+    env, process,
+    sync::{Arc, RwLock},
 };
 use tokio::signal;
 use tokio::sync::broadcast::Receiver;
@@ -95,6 +95,7 @@ mod test {
     use fake::Fake;
     use lettre::{ClientSecurity, SmtpClient, Transport};
     use lettre_email::{mime, EmailBuilder};
+    use rand::prelude::*;
     use std::{path::Path, thread, time};
 
     #[test]
@@ -105,6 +106,8 @@ mod test {
             .unwrap()
             .transport();
 
+        let mut rng = rand::thread_rng();
+
         loop {
             let to: (String, String) = (FreeEmail().fake(), Name().fake());
             let from: (String, String) = (FreeEmail().fake(), Name().fake());
@@ -113,15 +116,21 @@ mod test {
 
             println!("Sending mail to {}", &to.0);
 
-            let email = EmailBuilder::new()
+            let mut builder = EmailBuilder::new()
                 .to(to)
                 .from(from)
                 .subject(subject)
-                .text(body)
-                .attachment_from_file(Path::new("blank.pdf"), None, &mime::APPLICATION_PDF)
-                .unwrap()
-                .build()
-                .unwrap();
+                .text(body);
+
+            let r: u8 = rng.gen();
+
+            for _ in 0..(r % 3) {
+                builder = builder
+                    .attachment_from_file(Path::new("blank.pdf"), None, &mime::APPLICATION_PDF)
+                    .unwrap();
+            }
+
+            let email = builder.build().unwrap();
 
             if let Err(e) = mailer.send(email.into()) {
                 eprintln!("{}", e);

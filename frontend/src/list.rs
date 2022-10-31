@@ -1,7 +1,7 @@
 use crate::types::MailMessageMetadata;
 use js_sys::Date;
 use timeago::Formatter;
-use yew::{function_component, html, use_state, Callback, Properties};
+use yew::{function_component, html, use_effect, use_state, Callback, Properties};
 use yew_hooks::use_interval;
 
 #[derive(Properties, PartialEq)]
@@ -30,6 +30,15 @@ pub fn list(props: &MessageListProps) -> Html {
         );
     }
 
+    {
+        let count = props.messages.iter().filter(|m| !m.opened).count();
+        use_effect(move || {
+            gloo_utils::document().set_title(&format!("MailCrab ({})", count));
+
+            || ()
+        });
+    }
+
     props
         .messages
         .iter()
@@ -38,25 +47,29 @@ pub fn list(props: &MessageListProps) -> Html {
             let select = props.select.clone();
             let onclick = { Callback::from(move |_| select.emit(id.clone())) };
 
-            let class = if props.selected == message.id {
-                "selected"
+            let mut classes = vec![];
+            
+            if props.selected == message.id {
+                classes.push("selected");
             } else if message.opened {
-                "opened"
-            } else {
-                ""
-            };
+                classes.push("opened")
+            }
+
+            if message.attachments.len() > 0 {
+                classes.push("attachments");
+            } 
 
             let ago = if message.time > *now {
-              std::time::Duration::from_secs(0)
+                std::time::Duration::from_secs(0)
             } else {
-              std::time::Duration::from_secs(*now - message.time)
+                std::time::Duration::from_secs(*now - message.time)
             };
 
             html! {
               <li
                 tabIndex="0"
                 onclick={onclick}
-                class={class}
+                class={classes.join(" ")}
               >
                 <span class="head">
                   <span class="from">

@@ -4,7 +4,7 @@ use axum::{
         Path, WebSocketUpgrade,
     },
     http::StatusCode,
-    response::IntoResponse,
+    response::{Html, IntoResponse},
     routing::{get, get_service},
     Extension, Json, Router,
 };
@@ -104,6 +104,21 @@ async fn message_handler(
     }
 }
 
+/// return message body (html/text)
+async fn message_body_handler(
+    Path(id): Path<Uuid>,
+    Extension(state): Extension<Arc<AppState>>,
+) -> Result<Html<String>, StatusCode> {
+    if let Ok(storage) = state.storage.read() {
+        match storage.get(&id) {
+            Some(message) => Ok(Html(message.body())),
+            _ => Err(StatusCode::NOT_FOUND),
+        }
+    } else {
+        Err(StatusCode::INTERNAL_SERVER_ERROR)
+    }
+}
+
 /// static serve error handler
 async fn handle_error(_err: io::Error) -> impl IntoResponse {
     (StatusCode::INTERNAL_SERVER_ERROR, "Error")
@@ -116,6 +131,7 @@ pub async fn http_server(app_state: Arc<AppState>, port: u16) {
         .route("/ws", get(ws_handler))
         .route("/api/messages", get(messages_handler))
         .route("/api/message/:id", get(message_handler))
+        .route("/api/message/:id/body", get(message_body_handler))
         .fallback(get_service(static_serve).handle_error(handle_error))
         .layer(Extension(app_state))
         .layer(

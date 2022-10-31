@@ -1,18 +1,35 @@
 use crate::types::MailMessage;
 use yew::{function_component, html, Html, Properties};
+use wasm_bindgen::{JsCast};
+use web_sys::{Event, HtmlIFrameElement};
 
 #[derive(Properties, Eq, PartialEq)]
 pub struct FormattedProps {
     pub message: MailMessage,
 }
 
+fn try_set_font(e: Event) -> Option<()> {
+  let target = e.target()?;
+  let element = target.dyn_ref::<HtmlIFrameElement>()?;
+      
+  element
+    .content_document()?
+    .body()?
+    .style()
+    .set_css_text("font-family:sans-serif;line-height:1.5");
+
+  Some(())
+}
+
 #[function_component(Formatted)]
 pub fn view(props: &FormattedProps) -> Html {
     let message = &props.message;
+    let body_src = format!("/api/message/{}/body", message.id);
+    let onload = |e: Event| { try_set_font(e); };
 
-    // insert message HTML in DOM
-    let encoded_body = base64::encode(&message.html);
-    let body_html = format!("data:text/html;base64,{}", encoded_body);
+    if message.id.is_empty() {
+      return html! {};
+    }
 
     html! {
       <>
@@ -67,11 +84,7 @@ pub fn view(props: &FormattedProps) -> Html {
           }).collect::<Html>()}
         </div>
         <div class="body">
-          if !message.html.is_empty() {
-            <iframe src={body_html}></iframe>
-          } else {
-            {&message.text}
-          }
+          <iframe onload={onload} src={body_src}></iframe>
         </div>
       </>
     }

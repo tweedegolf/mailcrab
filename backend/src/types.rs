@@ -121,6 +121,14 @@ impl MailMessage {
     pub fn open(&mut self) {
         self.opened = true;
     }
+
+    pub fn body(&self) -> String {
+        if self.html.is_empty() {
+            self.text.clone()
+        } else {
+            self.html.clone()
+        }
+    }
 }
 
 impl TryFrom<mail_parser::Message<'_>> for MailMessage {

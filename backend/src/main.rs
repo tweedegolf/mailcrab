@@ -95,8 +95,9 @@ mod test {
     use fake::Fake;
     use lettre::{ClientSecurity, SmtpClient, Transport};
     use lettre_email::{mime, EmailBuilder};
-    use std::{path::Path, thread, time};
     use rand::prelude::*;
+    use rand::prelude::*;
+    use std::{path::Path, thread, time};
 
     #[test]
     fn receive_email() {
@@ -125,7 +126,9 @@ mod test {
             let r: u8 = rng.gen();
 
             for _ in 0..(r % 3) {
-                builder = builder.attachment_from_file(Path::new("blank.pdf"), None, &mime::APPLICATION_PDF).unwrap();
+                builder = builder
+                    .attachment_from_file(Path::new("blank.pdf"), None, &mime::APPLICATION_PDF)
+                    .unwrap();
             }
 
             let email = builder.build().unwrap();

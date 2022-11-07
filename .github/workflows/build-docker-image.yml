@@ -55,6 +55,10 @@ jobs:
         command: build
         args: --release --target x86_64-unknown-linux-musl --manifest-path backend/Cargo.toml
 
+    - name: Cargo clean
+      run: cargo clean
+      working-directory: ./backend
+
     - name: Build target arm64
       uses: actions-rs/cargo@v1
       with:

@@ -96,7 +96,6 @@ mod test {
     use lettre::{ClientSecurity, SmtpClient, Transport};
     use lettre_email::{mime, EmailBuilder};
     use rand::prelude::*;
-    use rand::prelude::*;
     use std::{path::Path, thread, time};
 
     #[test]

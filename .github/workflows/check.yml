@@ -31,16 +31,34 @@ jobs:
         toolchain: stable
         target: wasm32-unknown-unknown
 
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
     - name: Download trunk
       uses: jetli/trunk-action@v0.1.0
       with:
         version: 'latest'
 
-    - name: Build
-      run: cargo build --verbose --manifest-path backend/Cargo.toml
+    - name: Build target amd64
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target x86_64-unknown-linux-musl --manifest-path backend/Cargo.toml
 
-    - name: Check code style
-      run: cargo fmt --manifest-path backend/Cargo.toml -- --check
+    - name: Cargo clean
+      run: cargo clean
+      working-directory: ./backend
+
+    - name: Build target arm64
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: true
+        command: build
+        args: --release --target aarch64-unknown-linux-musl --manifest-path backend/Cargo.toml
 
     - name: Build frontend
       run: trunk build

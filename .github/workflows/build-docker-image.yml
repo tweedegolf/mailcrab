@@ -55,7 +55,7 @@ jobs:
         command: build
         args: --release --target x86_64-unknown-linux-musl --manifest-path backend/Cargo.toml
 
-     - name: Copy binary
+    - name: Copy binary
       run: |
         mkdir bin
         cp target/x86_64-unknown-linux-musl/release/mailcrab-backend bin/amd64

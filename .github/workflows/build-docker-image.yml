@@ -55,6 +55,12 @@ jobs:
         command: build
         args: --release --target x86_64-unknown-linux-musl --manifest-path backend/Cargo.toml
 
+     - name: Copy binary
+      run: |
+        mkdir bin
+        cp target/x86_64-unknown-linux-musl/release/mailcrab-backend bin/amd64
+      working-directory: ./backend
+
     - name: Cargo clean
       run: cargo clean
       working-directory: ./backend
@@ -66,10 +72,9 @@ jobs:
         command: build
         args: --release --target aarch64-unknown-linux-musl --manifest-path backend/Cargo.toml
 
-    - name: Copy binaries 
+    - name: Copy binary
       run: |
-        cp target/aarch64-unknown-linux-musl/release/mailcrab-backend target/arm64
-        cp target/x86_64-unknown-linux-musl/release/mailcrab-backend target/amd64
+        cp target/x86_64-unknown-linux-musl/release/mailcrab-backend bin/amd64
       working-directory: ./backend
 
     - name: Build frontend

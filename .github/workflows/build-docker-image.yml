@@ -74,7 +74,7 @@ jobs:
 
     - name: Copy binary
       run: |
-        cp target/aarch64-unknown-linux-musl/release/mailcrab-backend bin/amd64
+        cp target/aarch64-unknown-linux-musl/release/mailcrab-backend bin/arm64
       working-directory: ./backend
 
     - name: Build frontend

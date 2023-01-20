@@ -1,34 +1,52 @@
 use crate::types::MailMessage;
+use wasm_bindgen::JsCast;
+use web_sys::{Event, HtmlIFrameElement, HtmlLinkElement};
 use yew::{function_component, html, Html, Properties};
-use wasm_bindgen::{JsCast};
-use web_sys::{Event, HtmlIFrameElement};
 
 #[derive(Properties, Eq, PartialEq)]
 pub struct FormattedProps {
     pub message: MailMessage,
 }
 
-fn try_set_font(e: Event) -> Option<()> {
-  let target = e.target()?;
-  let element = target.dyn_ref::<HtmlIFrameElement>()?;
-      
-  element
-    .content_document()?
-    .body()?
-    .style()
-    .set_css_text("font-family:sans-serif;line-height:1.5");
+fn try_set_font(e: &Event) -> Option<()> {
+    let target = e.target()?;
+    let element = target.dyn_ref::<HtmlIFrameElement>()?;
 
-  Some(())
+    element
+        .content_document()?
+        .body()?
+        .style()
+        .set_css_text("font-family:sans-serif;line-height:1.5");
+
+    Some(())
+}
+
+fn try_set_link_targets(e: &Event) -> Option<()> {
+    let target = e.target()?;
+    let element = target.dyn_ref::<HtmlIFrameElement>()?;
+
+    let links = element.content_document()?.query_selector_all("a").ok()?;
+
+    for i in 0..links.length() {
+        if let Some(l) = links.get(i) {
+            l.unchecked_into::<HtmlLinkElement>().set_target("_blank")
+        }
+    }
+
+    Some(())
 }
 
 #[function_component(Formatted)]
 pub fn view(props: &FormattedProps) -> Html {
     let message = &props.message;
     let body_src = format!("/api/message/{}/body", message.id);
-    let onload = |e: Event| { try_set_font(e); };
+    let onload = |e: Event| {
+        try_set_font(&e);
+        try_set_link_targets(&e);
+    };
 
     if message.id.is_empty() {
-      return html! {};
+        return html! {};
     }
 
     html! {

@@ -48,16 +48,16 @@ pub fn list(props: &MessageListProps) -> Html {
             let onclick = { Callback::from(move |_| select.emit(id.clone())) };
 
             let mut classes = vec![];
-            
+
             if props.selected == message.id {
                 classes.push("selected");
             } else if message.opened {
                 classes.push("opened")
             }
 
-            if message.attachments.len() > 0 {
+            if message.attachments.is_empty() {
                 classes.push("attachments");
-            } 
+            }
 
             let ago = if message.time > *now {
                 std::time::Duration::from_secs(0)

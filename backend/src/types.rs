@@ -151,12 +151,12 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
 
         let subject = message.get_subject().unwrap_or_default().to_owned();
 
-        let text = match message.get_text_body(0) {
+        let text = match message.get_text_bodies().next() {
             Some(item) => item.to_string(),
             _ => Default::default(),
         };
 
-        let html = match message.get_html_body(0) {
+        let html = match message.get_html_bodies().find(|p| p.is_text_html()) {
             Some(item) => item.to_string(),
             _ => Default::default(),
         };

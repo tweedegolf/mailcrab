@@ -29,42 +29,66 @@ async fn ws_handler(
 ) -> impl IntoResponse {
     ws.on_upgrade(|mut socket: WebSocket| async move {
         let mut receive = state.rx.resubscribe();
+        let mut active = true;
 
-        loop {
+        while active {
             tokio::select! {
-                Ok(message) = receive.recv() => {
-                    let metadata: MailMessageMetadata = message.into();
-                    match serde_json::to_string(&metadata) {
-                        Ok(json) => {
-                            if socket.send(ws::Message::Text(json)).await.is_err() {
-                                event!(Level::INFO, "WS client disconnected");
-                                return;
+                internal_received = receive.recv() => {
+                    match internal_received {
+                        Ok(message) => {
+                            let metadata: MailMessageMetadata = message.into();
+                            match serde_json::to_string(&metadata) {
+                                Ok(json) => {
+                                    if socket.send(ws::Message::Text(json)).await.is_err() {
+                                        event!(Level::INFO, "WS client disconnected");
+                                        active = false;
+                                    }
+                                },
+                                Err(e) => {
+                                    event!(Level::ERROR, "could not convert message to json {:?}", e);
+                                }
                             }
                         },
                         Err(e) => {
-                            event!(Level::ERROR, "Could not convert message to json {:?}", e);
+                            event!(Level::ERROR, "event pipeline error {:?}", e);
+                            active = false;
                         }
                     }
                 },
-                Some(Ok(ws::Message::Text(action))) = socket.recv() => {
-                    match serde_json::from_str(action.as_str()) {
-                        Ok(Action::RemoveAll) => if let Ok(mut storage) = state.storage.write() {
-                            storage.clear();
-                            event!(Level::INFO, "storage cleared");
-                        },
-                        Ok(Action::Open(id)) => if let Ok(mut storage) = state.storage.write() {
-                            if let Some(message) = storage.get_mut(&id) {
-                                message.open();
-                                event!(Level::INFO, "message {} opened", &id);
+                socket_received = socket.recv() => {
+                    match socket_received {
+                        Some(Ok(ws::Message::Text(action))) => {
+                            match serde_json::from_str(action.as_str()) {
+                                Ok(Action::RemoveAll) => if let Ok(mut storage) = state.storage.write() {
+                                    storage.clear();
+                                    event!(Level::INFO, "storage cleared");
+                                },
+                                Ok(Action::Open(id)) => if let Ok(mut storage) = state.storage.write() {
+                                    if let Some(message) = storage.get_mut(&id) {
+                                        message.open();
+                                        event!(Level::INFO, "message {} opened", &id);
+                                    }
+                                },
+                                Ok(Action::Remove(id)) => if let Ok(mut storage) = state.storage.write() {
+                                    if storage.remove(&id).is_some() {
+                                        event!(Level::INFO, "message {} removed", &id);
+                                    }
+                                },
+                                msg => {
+                                    event!(Level::WARN, "unknown action {:?}", msg);
+                                },
                             }
                         },
-                        Ok(Action::Remove(id)) => if let Ok(mut storage) = state.storage.write() {
-                            if storage.remove(&id).is_some() {
-                                event!(Level::INFO, "message {} removed", &id);
-                            }
+                        Some(Ok(ws::Message::Close(_))) | None => {
+                            event!(Level::INFO, "websocket closed");
+                            active = false;
                         },
-                        msg => {
-                            event!(Level::WARN, "unknown action {:?}", msg);
+                        Some(Err(e)) => {
+                            event!(Level::WARN, "websocket error {:?}", e);
+                            active = false;
+                        },
+                        Some(Ok(other_message)) => {
+                            event!(Level::INFO, "received unexpected message {:?}", other_message);
                         },
                     }
                 }

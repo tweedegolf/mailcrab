@@ -37,7 +37,7 @@ input, button, select {
   font-display: swap;
   font-style: normal;
   font-named-instance: 'Regular';
-  src: url("/fonts/Inter-roman.var.woff2") format("woff2");
+  src: url("fonts/Inter-roman.var.woff2") format("woff2");
 }
 
 @font-face {
@@ -46,7 +46,7 @@ input, button, select {
   font-display: swap;
   font-style: italic;
   font-named-instance: 'Italic';
-  src: url("/fonts/Inter-italic.var.woff2") format("woff2");
+  src: url("fonts/Inter-italic.var.woff2") format("woff2");
 }
 
 $grey: #ccc;
@@ -70,7 +70,7 @@ header {
   h1 {
     line-height: 4rem;
     padding-left: 6.5rem;
-    background: url('/img/mailcrab.svg') no-repeat center left 1rem;
+    background: url('img/mailcrab.svg') no-repeat center left 1rem;
     background-size: 5rem;
     font-weight: 300;
     font-size: 2.5rem;
@@ -91,7 +91,7 @@ header {
     font-size: 0.9rem;
     height: 2.5rem;
     line-height: 2rem;
-    background: white url('/img/trash.svg') no-repeat top 0.6rem left 0.75rem;
+    background: white url('img/trash.svg') no-repeat top 0.6rem left 0.75rem;
     background-size: 14px;
 
     span {
@@ -153,7 +153,7 @@ header {
     animation: slide-down 300ms ease-in;
     overflow: hidden;
     font-size: 0.9rem;
-    background: white url('/img/envelope.svg') no-repeat center left 0.75rem;
+    background: white url('img/envelope.svg') no-repeat center left 0.75rem;
     background-size: 2rem;
 
     &:last-child {
@@ -166,13 +166,13 @@ header {
 
     &.opened {
       opacity: 0.5;
-      background-image: url('/img/envelope-open.svg');
+      background-image: url('img/envelope-open.svg');
     }
 
     &.selected {
       color: black !important;
       font-weight: 500;
-      background-image: url('/img/envelope-open-text.svg');
+      background-image: url('img/envelope-open-text.svg');
     }
 
     .head {
@@ -219,7 +219,7 @@ header {
         margin-right: 0.2rem;
         width: 0.9rem;
         height: 0.9rem;
-        background: url('/img/paperclip.svg') no-repeat center left;
+        background: url('img/paperclip.svg') no-repeat center left;
       }
     }
   }
@@ -265,7 +265,7 @@ header {
             margin-right: 0;
             margin-bottom: 0.25rem;
             padding: 0.5rem 1.5rem 0.5rem 2rem;
-            background: white url('/img/trash.svg') no-repeat center left 1rem;
+            background: white url('img/trash.svg') no-repeat center left 1rem;
             background-size: 12px;
             border: 1px solid $grey;
 
@@ -326,11 +326,11 @@ header {
           text-decoration: none;
           color: black;
           transition: all 150ms ease-in;
-          background: white url('/img/file.svg') no-repeat center left 0.5rem;
+          background: white url('img/file.svg') no-repeat center left 0.5rem;
           background-size: 1rem;
 
           &.application-pdf {
-            background-image: url('/img/file-pdf.svg') 
+            background-image: url('img/file-pdf.svg') 
           }
 
           .size {

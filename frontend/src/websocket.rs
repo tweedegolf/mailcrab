@@ -19,11 +19,15 @@ impl WebsocketService {
         let mut location = web_sys::window()
             .unwrap()
             .location()
-            .origin()
+            .href()
             .unwrap()
             .replace("http://", "ws://")
-            .replace("https://", "wss://");
+            .replace("https://", "wss://")
+            .trim_end_matches('/')
+            .to_string();
+
         location.push_str("/ws");
+
         let ws = WebSocket::open(&location).unwrap();
 
         let (mut write, mut read) = ws.split();

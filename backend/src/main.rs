@@ -113,7 +113,10 @@ mod test {
             let from: (String, String) = (FreeEmail().fake(), Name().fake());
             let subject: String = CatchPhase().fake();
             let body: String = Paragraph(2..3).fake();
-            let html = format!("{}\n<p><a href=\"https://github.com/tweedegolf/mailcrab\">external link</a></p>", body);
+            let html = format!(
+                "{}\n<p><a href=\"https://github.com/tweedegolf/mailcrab\">external link</a></p>",
+                body
+            );
 
             println!("Sending mail to {}", &to.0);
 

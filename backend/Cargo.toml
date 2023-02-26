@@ -6,7 +6,7 @@ publish = false
 
 [dependencies]
 async-stream = "0.3"
-axum = { version = "0.5", features = ["ws", "headers"] }
+axum = { version = "0.6", features = ["ws", "headers"] }
 base64 = "0.13"
 chrono = "0.4"
 chrono-humanize = "0.2"

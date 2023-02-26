@@ -9,5 +9,5 @@ mod view;
 mod websocket;
 
 fn main() {
-    yew::start_app::<Overview>();
+    yew::Renderer::<Overview>::new().render();
 }

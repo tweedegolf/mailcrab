@@ -9,6 +9,7 @@ env:
 
 jobs:
   get-tag:
+    name: "Get tag from package version"
     runs-on: ubuntu-22.04
     outputs:
       pkg-version: ${{ steps.pkg-version.outputs.PKG_VERSION }} 
@@ -27,9 +28,12 @@ jobs:
       - name: Set tag
         shell: bash
         run: |
-          git tag v${{ steps.get-tag.outputs.PKG_VERSION }} && git push --tags
+          git tag v${{ steps.pkg-version.outputs.PKG_VERSION }} && git push --tags
 
   build:
+    name: "Build and release"
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    needs: "get-tag"
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3

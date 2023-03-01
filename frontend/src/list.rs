@@ -1,7 +1,7 @@
 use crate::types::MailMessageMetadata;
 use js_sys::Date;
 use timeago::Formatter;
-use yew::{function_component, html, use_effect, use_state, Callback, Properties};
+use yew::{function_component, html, use_effect, use_state, Callback, Html, Properties};
 use yew_hooks::use_interval;
 
 #[derive(Properties, PartialEq)]
@@ -55,7 +55,7 @@ pub fn list(props: &MessageListProps) -> Html {
                 classes.push("opened")
             }
 
-            if message.attachments.is_empty() {
+            if !message.attachments.is_empty() {
                 classes.push("attachments");
             }
 

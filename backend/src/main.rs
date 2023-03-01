@@ -17,6 +17,8 @@ mod web_server;
 pub struct AppState {
     rx: Receiver<MailMessage>,
     storage: RwLock<HashMap<MessageId, MailMessage>>,
+    prefix: String,
+    index: String,
 }
 
 /// get a port number from the environment or return default value
@@ -25,6 +27,15 @@ fn get_env_port(name: &'static str, default: u16) -> u16 {
         .unwrap_or_default()
         .parse()
         .unwrap_or(default)
+}
+
+fn load_index() -> String {
+    let index: String = std::fs::read_to_string("dist/index.html").expect("index.html not found");
+
+    // remove slash from start of asset includes, so they are loaded by relative path
+    index
+        .replace("href=\"/", "href=\"./static/")
+        .replace("'/mailcrab-frontend", "'./static/mailcrab-frontend")
 }
 
 #[tokio::main]
@@ -41,6 +52,10 @@ async fn main() {
     let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
     let http_port: u16 = get_env_port("HTTP_PORT", 1080);
 
+    // construct path prefix
+    let prefix = std::env::var("MAILCRAB_PREFIX").unwrap_or_default();
+    let prefix = format!("/{}", prefix.trim_matches('/'));
+
     event!(
         Level::INFO,
         "MailCrab server starting http on port {} and smtp on port {}",
@@ -54,6 +69,8 @@ async fn main() {
     let app_state = Arc::new(AppState {
         rx,
         storage: Default::default(),
+        index: load_index(),
+        prefix,
     });
 
     // receive and broadcast mail messages
@@ -88,53 +105,62 @@ async fn main() {
 
 #[cfg(test)]
 mod test {
-    use fake::faker::company::en::CatchPhase;
+    use fake::faker::company::en::{Buzzword, CatchPhase};
     use fake::faker::internet::en::FreeEmail;
     use fake::faker::lorem::en::Paragraph;
     use fake::faker::name::en::Name;
     use fake::Fake;
-    use lettre::{ClientSecurity, SmtpClient, Transport};
-    use lettre_email::{mime, EmailBuilder};
+    use lettre::message::header::ContentType;
+    use lettre::message::{Attachment, MultiPart, SinglePart};
+    use lettre::{Message, SmtpTransport, Transport};
     use rand::prelude::*;
-    use std::{path::Path, thread, time};
+    use std::{thread, time};
 
     #[test]
     fn receive_email() {
-        let addr = "127.0.0.1:1025";
-
-        let mut mailer = SmtpClient::new(addr, ClientSecurity::None)
-            .unwrap()
-            .transport();
-
+        let mailer = SmtpTransport::builder_dangerous("localhost")
+            .port(1025)
+            .build();
         let mut rng = rand::thread_rng();
 
         loop {
-            let to: (String, String) = (FreeEmail().fake(), Name().fake());
-            let from: (String, String) = (FreeEmail().fake(), Name().fake());
-            let subject: String = CatchPhase().fake();
+            let to: String = FreeEmail().fake();
+            let to_name: String = Name().fake();
+            let from: String = FreeEmail().fake();
+            let from_name: String = Name().fake();
             let body: String = Paragraph(2..3).fake();
-            let html = format!("{}\n<p><a href=\"https://github.com/tweedegolf/mailcrab\">external link</a></p>", body);
+            let html: String = format!(
+                "{}\n<p><a href=\"https://github.com/tweedegolf/mailcrab\">external link</a></p>",
+                body
+            );
 
-            println!("Sending mail to {}", &to.0);
+            println!("Sending mail to {}", &to);
 
-            let mut builder = EmailBuilder::new()
-                .to(to)
-                .from(from)
-                .subject(subject)
-                .text(body)
-                .html(html);
+            let builder = Message::builder()
+                .from(format!("{from_name} <{from}>",).parse().unwrap())
+                .to(format!("{to_name} <{to}>").parse().unwrap())
+                .subject(CatchPhase().fake::<String>());
+
+            let mut multipart = MultiPart::mixed().multipart(
+                MultiPart::alternative()
+                    .singlepart(SinglePart::plain(body))
+                    .singlepart(SinglePart::html(html)),
+            );
 
             let r: u8 = rng.gen();
+            let filebody = std::fs::read("blank.pdf").unwrap();
+            let content_type = ContentType::parse("application/pdf").unwrap();
 
             for _ in 0..(r % 3) {
-                builder = builder
-                    .attachment_from_file(Path::new("blank.pdf"), None, &mime::APPLICATION_PDF)
-                    .unwrap();
+                let filename = format!("{}.pdf", Buzzword().fake::<&str>().to_ascii_lowercase());
+                let attachment =
+                    Attachment::new(filename).body(filebody.clone(), content_type.clone());
+                multipart = multipart.singlepart(attachment);
             }
 
-            let email = builder.build().unwrap();
+            let email = builder.multipart(multipart).unwrap();
 
-            if let Err(e) = mailer.send(email.into()) {
+            if let Err(e) = mailer.send(&email) {
                 eprintln!("{}", e);
             }
 

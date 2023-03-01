@@ -1,4 +1,4 @@
-name: Build docker image
+name: "Build and release"
 
 on:
   push:
@@ -8,6 +8,27 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  get-tag:
+    runs-on: ubuntu-22.04
+    outputs:
+      pkg-version: ${{ steps.pkg-version.outputs.PKG_VERSION }} 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get tag
+        id: pkg-version
+        shell: bash
+        run: |
+          echo PKG_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' backend/Cargo.toml) >> $GITHUB_OUTPUT
+
+      - name: Set tag
+        shell: bash
+        run: |
+          git tag v${{ steps.get-tag.outputs.PKG_VERSION }} && git push --tags
+
   build:
     runs-on: ubuntu-22.04
     steps:
@@ -82,4 +103,4 @@ jobs:
       working-directory: ./frontend
 
     - name: Build docker image
-      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest
+      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest -t marlonb/mailcrab:${{ needs.get-tag.outputs.pkg-version }}

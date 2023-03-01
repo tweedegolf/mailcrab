@@ -1,4 +1,4 @@
-use crate::types::MailMessage;
+use crate::{api::get_api_path, types::MailMessage};
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlIFrameElement, HtmlLinkElement};
 use yew::{function_component, html, Html, Properties};
@@ -39,7 +39,10 @@ fn try_set_link_targets(e: &Event) -> Option<()> {
 #[function_component(Formatted)]
 pub fn view(props: &FormattedProps) -> Html {
     let message = &props.message;
-    let body_src = format!("/api/message/{}/body", message.id);
+    let mut body_src = get_api_path("message/");
+    body_src.push_str(message.id.as_str());
+    body_src.push_str("/body");
+
     let onload = |e: Event| {
         try_set_font(&e);
         try_set_link_targets(&e);

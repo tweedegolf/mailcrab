@@ -45,11 +45,25 @@ docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
 
 Open a browser and navigate to [http://localhost:1080](http://localhost:1080) to view the web interface.
 
+### Ports
+
 The default SMTP port is 1025, the default HTTP port is 1080. You can configure the SMTP and HTTP port using environment variables (`SMTP_PORT` and `HTTP_PORT`), or by exposing them on different ports using docker:
 
 ```
 docker run --rm -p 3000:1080 -p 2525:1025 marlonb/mailcrab:latest
 ```
+
+### Path prefix
+
+You can configure a prefix path for the web interface by setting and environment variable named `MAILCRAB_PREFIX`, for example:
+
+```
+docker run --rm --env MAILCRAB_PREFIX=emails -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
+```
+
+The web interface will also be served at [http://localhost:1080/emails/](http://localhost:1080/emails/)
+
+### docker compose
 
 Usage in a `docker-compose.yml` file:
 

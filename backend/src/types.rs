@@ -67,8 +67,8 @@ pub struct Attachment {
 
 impl From<&mail_parser::MessagePart<'_>> for Attachment {
     fn from(part: &mail_parser::MessagePart) -> Self {
-        let filename = part.get_attachment_name().unwrap_or_default().to_string();
-        let mime = match part.get_content_type() {
+        let filename = part.attachment_name().unwrap_or_default().to_string();
+        let mime = match part.content_type() {
             Some(content_type) => match &content_type.c_subtype {
                 Some(subtype) => format!("{}/{}", content_type.c_type, subtype),
                 None => content_type.c_type.to_string(),
@@ -79,8 +79,8 @@ impl From<&mail_parser::MessagePart<'_>> for Attachment {
         Attachment {
             filename,
             mime,
-            size: humansize::format_size(part.get_contents().len(), humansize::DECIMAL),
-            content: base64::encode(part.get_contents()),
+            size: humansize::format_size(part.contents().len(), humansize::DECIMAL),
+            content: base64::encode(part.contents()),
         }
     }
 }
@@ -135,12 +135,12 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
     type Error = &'static str;
 
     fn try_from(message: mail_parser::Message) -> Result<Self, Self::Error> {
-        let from = match message.get_from() {
+        let from = match message.from() {
             mail_parser::HeaderValue::Address(addr) => addr.into(),
             _ => return Err("Could not parse From  address header"),
         };
 
-        let to = match message.get_to() {
+        let to = match message.to() {
             mail_parser::HeaderValue::Address(addr) => vec![addr.into()],
             mail_parser::HeaderValue::AddressList(list) => list
                 .iter()
@@ -149,24 +149,24 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
             _ => return Err("Could not parse To address header"),
         };
 
-        let subject = message.get_subject().unwrap_or_default().to_owned();
+        let subject = message.subject().unwrap_or_default().to_owned();
 
-        let text = match message.get_text_bodies().next() {
+        let text = match message.text_bodies().next() {
             Some(item) => item.to_string(),
             _ => Default::default(),
         };
 
-        let html = match message.get_html_bodies().find(|p| p.is_text_html()) {
+        let html = match message.html_bodies().find(|p| p.is_text_html()) {
             Some(item) => item.to_string(),
             _ => Default::default(),
         };
 
         let attachments = message
-            .get_attachments()
+            .attachments()
             .map(|attachement| attachement.into())
             .collect::<Vec<Attachment>>();
 
-        let date: DateTime<Local> = match message.get_date() {
+        let date: DateTime<Local> = match message.date() {
             Some(date) => match DateTime::parse_from_rfc2822(date.to_rfc3339().as_str()) {
                 Ok(date_time) => date_time.into(),
                 _ => Local::now(),
@@ -178,7 +178,7 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
 
         let mut headers = HashMap::<String, String>::new();
 
-        for (key, value) in message.get_headers_raw() {
+        for (key, value) in message.headers_raw() {
             headers.insert(key.to_string(), value.to_string());
         }
 

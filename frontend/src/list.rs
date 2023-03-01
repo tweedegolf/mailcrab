@@ -55,7 +55,7 @@ pub fn list(props: &MessageListProps) -> Html {
                 classes.push("opened")
             }
 
-            if message.attachments.is_empty() {
+            if !message.attachments.is_empty() {
                 classes.push("attachments");
             }
 

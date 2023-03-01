@@ -5,10 +5,9 @@ use axum::{
     },
     http::StatusCode,
     response::{Html, IntoResponse},
-    routing::{get, get_service},
+    routing::get,
     Extension, Json, Router,
 };
-use std::io;
 use std::{net::SocketAddr, sync::Arc};
 use tower_http::{
     services::ServeDir,
@@ -143,31 +142,33 @@ async fn message_body_handler(
     }
 }
 
-/// static serve error handler
-async fn handle_error(_err: io::Error) -> impl IntoResponse {
-    (StatusCode::INTERNAL_SERVER_ERROR, "Error")
+async fn index(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
+    Html(state.index.clone())
 }
 
 pub async fn http_server(app_state: Arc<AppState>, port: u16) {
-    let static_serve = ServeDir::new("dist").append_index_html_on_directories(true);
+    let serve_dir = ServeDir::new("dist");
 
     let router = Router::new()
+        .route("/", get(index))
         .route("/ws", get(ws_handler))
         .route("/api/messages", get(messages_handler))
         .route("/api/message/:id", get(message_handler))
         .route("/api/message/:id/body", get(message_body_handler))
-        .fallback(get_service(static_serve.clone()).handle_error(handle_error));
+        .nest_service("/static", serve_dir);
 
-    let prefix = std::env::var("MAILCRAB_PREFIX").unwrap_or("/".to_string());
-
-    let app = Router::new()
-        .nest(&prefix, router)
-        .fallback(get_service(static_serve).handle_error(handle_error))
-        .layer(Extension(app_state))
+    let mut app = Router::new()
+        .nest(app_state.prefix.as_str(), router.clone())
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
         );
+
+    if &app_state.prefix != "/" {
+        app = app.nest("/", router);
+    }
+
+    app = app.layer(Extension(app_state));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let server = axum::Server::bind(&addr).serve(app.into_make_service());

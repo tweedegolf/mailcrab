@@ -22,7 +22,7 @@ jobs:
         id: pkg-version
         shell: bash
         run: |
-          echo PKG_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' Cargo.toml) >> $GITHUB_OUTPUT
+          echo PKG_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' backend/Cargo.toml) >> $GITHUB_OUTPUT
 
       - name: Set tag
         shell: bash
@@ -74,7 +74,7 @@ jobs:
       with:
         use-cross: true
         command: build
-        args: --release --target x86_64-unknown-linux-musl --manifest-path backend/Cargo.toml
+        args: --release --target x86_64-unknown-linux-musl --manifest-path backend/backend/
 
     - name: Copy binary
       run: |
@@ -91,7 +91,7 @@ jobs:
       with:
         use-cross: true
         command: build
-        args: --release --target aarch64-unknown-linux-musl --manifest-path backend/Cargo.toml
+        args: --release --target aarch64-unknown-linux-musl --manifest-path backend/backend/
 
     - name: Copy binary
       run: |

@@ -83,6 +83,9 @@ services:
 Install [Rust](https://www.rust-lang.org/learn/get-started) and [Trunk](https://trunkrs.dev/)
 
 ```
+# Add wasm as target if it it not present after following the install instructions for Trunk
+rustup target add wasm32-unknown-unknown
+
 # clone the code
 git clone git@github.com:tweedegolf/mailcrab.git
 

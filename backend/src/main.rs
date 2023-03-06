@@ -1,3 +1,4 @@
+use rust_embed::{EmbeddedFile, RustEmbed};
 use std::{
     collections::HashMap,
     env, process,
@@ -14,12 +15,17 @@ use crate::web_server::http_server;
 mod mail_server;
 mod types;
 mod web_server;
+
 pub struct AppState {
     rx: Receiver<MailMessage>,
     storage: RwLock<HashMap<MessageId, MailMessage>>,
     prefix: String,
     index: Option<String>,
 }
+
+#[derive(RustEmbed)]
+#[folder = "../frontend/dist"]
+pub struct Asset;
 
 /// get a port number from the environment or return default value
 fn get_env_port(name: &'static str, default: u16) -> u16 {
@@ -30,7 +36,8 @@ fn get_env_port(name: &'static str, default: u16) -> u16 {
 }
 
 fn load_index() -> Option<String> {
-    let index: String = std::fs::read_to_string("dist/index.html").ok()?;
+    let index: EmbeddedFile = Asset::get("index.html")?;
+    let index = String::from_utf8(index.data.to_vec()).ok()?;
 
     // remove slash from start of asset includes, so they are loaded by relative path
     Some(

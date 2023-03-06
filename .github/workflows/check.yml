@@ -42,6 +42,10 @@ jobs:
       with:
         version: 'latest'
 
+    - name: Build frontend
+      run: trunk build
+      working-directory: ./frontend
+
     - name: Build target amd64
       uses: actions-rs/cargo@v1
       with:
@@ -59,7 +63,3 @@ jobs:
         use-cross: true
         command: build
         args: --release --target aarch64-unknown-linux-musl --manifest-path backend/Cargo.toml
-
-    - name: Build frontend
-      run: trunk build
-      working-directory: ./frontend

@@ -44,8 +44,8 @@ pub fn view(props: &ViewMessageProps) -> Html {
     let mut tabs = vec![("Raw", Tab::Raw), ("Headers", Tab::Headers)];
 
     if !message.text.is_empty() && !message.html.is_empty() {
-        tabs.push(("Text", Tab::Text));
-        tabs.push(("Html", Tab::Formatted));
+        tabs.push(("Plain", Tab::Text));
+        tabs.push(("Formatted", Tab::Formatted));
     } else {
         tabs.push(("Formatted", Tab::Formatted));
     }

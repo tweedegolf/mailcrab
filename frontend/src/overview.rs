@@ -22,6 +22,7 @@ pub enum Msg {
 #[derive(Clone, PartialEq, Eq)]
 pub enum Tab {
     Formatted,
+    Text,
     Headers,
     Raw,
 }

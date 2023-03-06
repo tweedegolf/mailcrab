@@ -151,7 +151,10 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
 
         let subject = message.subject().unwrap_or_default().to_owned();
 
-        let text = match message.text_bodies().next() {
+        let text = match message
+            .text_bodies()
+            .find(|p| p.is_text() && !p.is_text_html())
+        {
             Some(item) => item.to_string(),
             _ => Default::default(),
         };

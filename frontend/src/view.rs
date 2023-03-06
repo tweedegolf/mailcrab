@@ -2,6 +2,7 @@ use crate::{
     api::fetch_message,
     formatted::Formatted,
     overview::Tab,
+    plaintext::Plaintext,
     types::{MailMessage, MailMessageMetadata},
 };
 use wasm_bindgen_futures::spawn_local;
@@ -40,36 +41,42 @@ pub fn view(props: &ViewMessageProps) -> Html {
     let raw = base64::decode(&message.raw).unwrap();
     let raw = String::from_utf8_lossy(&raw);
 
-    let tabs: Vec<Html> = vec![
-        ("Formatted", Tab::Formatted),
-        ("Headers", Tab::Headers),
-        ("Raw", Tab::Raw),
-    ]
-    .into_iter()
-    .map(|(label, tab)| {
-        let select_tab = tab.clone();
-        let onclick = {
-            let set_tab = props.set_tab.clone();
-            move |_| set_tab.emit(select_tab.clone())
-        };
-        let class = if props.active_tab == tab {
-            "active"
-        } else {
-            ""
-        };
+    let mut tabs = vec![("Raw", Tab::Raw), ("Headers", Tab::Headers)];
 
-        html! {
-          <li>
-            <button
-              onclick={onclick}
-              class={class}
-            >
-              {label}
-            </button>
-          </li>
-        }
-    })
-    .collect();
+    if !message.text.is_empty() && !message.html.is_empty() {
+        tabs.push(("Text", Tab::Text));
+        tabs.push(("Html", Tab::Formatted));
+    } else {
+        tabs.push(("Formatted", Tab::Formatted));
+    }
+
+    let tabs: Vec<Html> = tabs
+        .into_iter()
+        .rev()
+        .map(|(label, tab)| {
+            let select_tab = tab.clone();
+            let onclick = {
+                let set_tab = props.set_tab.clone();
+                move |_| set_tab.emit(select_tab.clone())
+            };
+            let class = if props.active_tab == tab {
+                "active"
+            } else {
+                ""
+            };
+
+            html! {
+              <li>
+                <button
+                  onclick={onclick}
+                  class={class}
+                >
+                  {label}
+                </button>
+              </li>
+            }
+        })
+        .collect();
 
     html! {
       <div class="view-inner">
@@ -84,6 +91,8 @@ pub fn view(props: &ViewMessageProps) -> Html {
         <div class="tab-content">
           if props.active_tab == Tab::Formatted {
             <Formatted message={(*message).clone()} />
+          } else if props.active_tab == Tab::Text {
+            <Plaintext message={(*message).clone()} />
           } else if props.active_tab == Tab::Headers {
             <table>
               <tbody>

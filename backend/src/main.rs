@@ -33,9 +33,11 @@ fn load_index() -> Option<String> {
     let index: String = std::fs::read_to_string("dist/index.html").ok()?;
 
     // remove slash from start of asset includes, so they are loaded by relative path
-    Some(index
-        .replace("href=\"/", "href=\"./static/")
-        .replace("'/mailcrab-frontend", "'./static/mailcrab-frontend"))
+    Some(
+        index
+            .replace("href=\"/", "href=\"./static/")
+            .replace("'/mailcrab-frontend", "'./static/mailcrab-frontend"),
+    )
 }
 
 #[tokio::main]
@@ -141,13 +143,25 @@ mod test {
                 .to(format!("{to_name} <{to}>").parse().unwrap())
                 .subject(CatchPhase().fake::<String>());
 
-            let mut multipart = MultiPart::mixed().multipart(
-                MultiPart::alternative()
-                    .singlepart(SinglePart::plain(body))
-                    .singlepart(SinglePart::html(html)),
-            );
-
             let r: u8 = rng.gen();
+            let mut multipart = MultiPart::mixed().build();
+
+            match r % 3 {
+                0 => {
+                    multipart = multipart.multipart(
+                        MultiPart::alternative()
+                            .singlepart(SinglePart::plain(body))
+                            .singlepart(SinglePart::html(html)),
+                    );
+                }
+                1 => {
+                    multipart = multipart.singlepart(SinglePart::plain(body));
+                }
+                _ => {
+                    multipart = multipart.singlepart(SinglePart::html(html));
+                }
+            };
+
             let filebody = std::fs::read("blank.pdf").unwrap();
             let content_type = ContentType::parse("application/pdf").unwrap();
 

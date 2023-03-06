@@ -120,7 +120,6 @@ mod test {
     fn receive_email() {
         let mailer = SmtpTransport::builder_dangerous("localhost")
             .port(1025)
-            .credentials(lettre::transport::smtp::authentication::Credentials::new("flip".to_string(), "flap".to_string()))
             .build();
         let mut rng = rand::thread_rng();
 

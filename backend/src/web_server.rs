@@ -143,19 +143,22 @@ async fn message_body_handler(
 }
 
 async fn index(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
-    Html(state.index.clone())
+    Html(state.index.as_ref().expect("index.html not found").clone())
 }
 
 pub async fn http_server(app_state: Arc<AppState>, port: u16) {
     let serve_dir = ServeDir::new("dist");
 
-    let router = Router::new()
-        .route("/", get(index))
+    let mut router = Router::new()
         .route("/ws", get(ws_handler))
         .route("/api/messages", get(messages_handler))
         .route("/api/message/:id", get(message_handler))
         .route("/api/message/:id/body", get(message_body_handler))
         .nest_service("/static", serve_dir);
+
+    if app_state.index.is_some() {
+        router = router.route("/", get(index));
+    }
 
     let mut app = Router::new()
         .nest(app_state.prefix.as_str(), router.clone())

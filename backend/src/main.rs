@@ -18,7 +18,7 @@ pub struct AppState {
     rx: Receiver<MailMessage>,
     storage: RwLock<HashMap<MessageId, MailMessage>>,
     prefix: String,
-    index: String,
+    index: Option<String>,
 }
 
 /// get a port number from the environment or return default value
@@ -29,13 +29,13 @@ fn get_env_port(name: &'static str, default: u16) -> u16 {
         .unwrap_or(default)
 }
 
-fn load_index() -> String {
-    let index: String = std::fs::read_to_string("dist/index.html").expect("index.html not found");
+fn load_index() -> Option<String> {
+    let index: String = std::fs::read_to_string("dist/index.html").ok()?;
 
     // remove slash from start of asset includes, so they are loaded by relative path
-    index
+    Some(index
         .replace("href=\"/", "href=\"./static/")
-        .replace("'/mailcrab-frontend", "'./static/mailcrab-frontend")
+        .replace("'/mailcrab-frontend", "'./static/mailcrab-frontend"))
 }
 
 #[tokio::main]
@@ -120,6 +120,7 @@ mod test {
     fn receive_email() {
         let mailer = SmtpTransport::builder_dangerous("localhost")
             .port(1025)
+            .credentials(lettre::transport::smtp::authentication::Credentials::new("flip".to_string(), "flap".to_string()))
             .build();
         let mut rng = rand::thread_rng();
 

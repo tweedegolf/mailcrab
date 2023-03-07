@@ -2,37 +2,15 @@ name: "Build and release"
 
 on:
   push:
-    branches: [ "main" ]
+    tags:
+      - v*.*.*
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  get-tag:
-    name: "Get tag from package version"
-    runs-on: ubuntu-22.04
-    outputs:
-      pkg-version: ${{ steps.pkg-version.outputs.PKG_VERSION }} 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Get tag
-        id: pkg-version
-        shell: bash
-        run: |
-          echo PKG_VERSION=$(awk -F ' = ' '$1 ~ /version/ { gsub(/["]/, "", $2); printf("%s",$2) }' backend/Cargo.toml) >> $GITHUB_OUTPUT
-
-      - name: Set tag
-        shell: bash
-        run: |
-          git tag v${{ steps.pkg-version.outputs.PKG_VERSION }} && git push --tags
-
   build:
     name: "Build and release"
-    needs: "get-tag"
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
@@ -82,7 +60,7 @@ jobs:
     - name: Copy binary
       run: |
         mkdir bin
-        cp target/x86_64-unknown-linux-musl/release/mailcrab-backend bin/amd64
+        cp target/x86_64-unknown-linux-musl/release/mailcrab-backend bin/mailcrab-amd64
       working-directory: ./backend
 
     - name: Cargo clean
@@ -98,7 +76,7 @@ jobs:
 
     - name: Copy binary
       run: |
-        cp target/aarch64-unknown-linux-musl/release/mailcrab-backend bin/arm64
+        cp target/aarch64-unknown-linux-musl/release/mailcrab-backend bin/mailcrab-arm64
       working-directory: ./backend
 
     - name: Build frontend
@@ -106,4 +84,18 @@ jobs:
       working-directory: ./frontend
 
     - name: Build docker image
-      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest -t marlonb/mailcrab:${{ needs.get-tag.outputs.pkg-version }}
+      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest -t marlonb/mailcrab:${{github.ref_name}}
+
+    - name: Archive (tar)
+      shell: bash
+      run: |
+        sha256sum -b "mailcrab-amd64-${{github.ref_name}}" > "mailcrab-amd64-${{github.ref_name}}.sha256"
+        sha256sum -b "mailcrab-arm64-${{github.ref_name}}" > "mailcrab-amd64-${{github.ref_name}}.arm64"
+      working-directory: bin
+
+    - uses: softprops/action-gh-release
+      with:
+        files: |
+          bin/mailcrab-*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

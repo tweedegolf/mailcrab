@@ -8,12 +8,13 @@ jobs:
   frontend:
     name: "Build frontend assets"
     runs-on: ubuntu-22.04
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          override: true
+          target: wasm32-unknown-unknown
 
       - uses: jetli/trunk-action@v0.4.0
         with:
@@ -29,12 +30,18 @@ jobs:
           path: frontend/dist
 
   build:
+    name: Binaries for ${{ matrix.name }}
+    needs: frontend
+    runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
         name:
           - linux-x86-64-gnu
           - linux-armv7-gnu
           - linux-arm64-gnu
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
         include:
           - name: linux-x86-64-gnu
             os: ubuntu-20.04
@@ -50,9 +57,6 @@ jobs:
             os: ubuntu-20.04
             target: aarch64-unknown-linux-gnu
             cross: true
-
-    name: Binaries for ${{ matrix.name }}
-    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@v3

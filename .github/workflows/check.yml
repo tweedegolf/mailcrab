@@ -5,84 +5,24 @@ on:
     branches: [ "main" ]
 
 jobs:
-  frontend:
-    name: Build frontend assets
+  clippy_check:
     runs-on: ubuntu-22.04
-
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v1
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          target: wasm32-unknown-unknown
-
-      - uses: jetli/trunk-action@v0.4.0
+      - run: cargo check --manifest-path backend/Cargo.toml
+      - run: cargo check --manifest-path frontend/Cargo.toml
+      - run: rustup component add clippy
+      - uses: actions-rs/clippy-check@v1
         with:
-          version: 'latest'
-
-      - name: Build frontend
-        run: trunk build
-        working-directory: frontend
-
-      - uses: actions/upload-artifact@v3
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --manifest-path backend/Cargo.toml
+      - uses: actions-rs/clippy-check@v1
         with:
-          name: frontend-build
-          path: frontend/dist
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --manifest-path frontend/Cargo.toml
+      - run: cargo fmt --check --manifest-path backend/Cargo.toml
+      - run: cargo fmt --check --manifest-path frontend/Cargo.toml
 
-  build:
-    name: Binaries for ${{ matrix.name }}
-    needs: frontend
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      matrix:
-        name:
-          - linux-x86-64-gnu
-          - linux-armv7-gnu
-          - linux-arm64-gnu
-          - linux-x86-64-musl
-          - linux-arm64-musl
-        include:
-          - name: linux-x86-64-gnu
-            os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            cross: false
-
-          - name: linux-armv7-gnu
-            os: ubuntu-22.04
-            target: armv7-unknown-linux-gnueabihf
-            cross: true
-
-          - name: linux-arm64-gnu
-            os: ubuntu-22.04
-            target: aarch64-unknown-linux-gnu
-            cross: true
-
-          - name: linux-x86-64-musl
-            os: ubuntu-22.04
-            target: x86_64-unknown-linux-musl
-            cross: true
-
-          - name: linux-arm64-musl
-            os: ubuntu-22.04
-            target: aarch64-unknown-linux-musl
-            cross: true
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: frontend-build
-          path: frontend/dist
-
-      - name: Build
-        uses: actions-rs/cargo@master
-        with:
-          use-cross: ${{ matrix.cross }}
-          command: build
-          args: --release --locked --target ${{ matrix.target }} --manifest-path backend/Cargo.toml

@@ -85,5 +85,4 @@ jobs:
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --release --locked --target ${{ matrix.target }}
-        working-directory: backend
+          args: --release --locked --target ${{ matrix.target }} --manifest-path backend/Cargo.toml

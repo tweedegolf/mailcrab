@@ -91,8 +91,7 @@ jobs:
         with:
           use-cross: ${{ matrix.cross }}
           command: build
-          args: --release --locked --target ${{ matrix.target }}
-        working-directory: backend
+          args: --release --locked --target ${{ matrix.target }} --manifest-path backend/Cargo.toml
 
       # TODO: release binaries
 
@@ -107,7 +106,7 @@ jobs:
         if: ${{ matrix.platform }}
         run: |
           cp target/${{ matrix.target }}/release/mailcrab-backend bin/${{ matrix.platform }}
-        working-directory: ./backend
+        working-directory: backend
 
       - name: Build docker image
         if: ${{ matrix.platform }}

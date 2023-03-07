@@ -6,7 +6,7 @@ on:
 
 jobs:
   frontend:
-    name: "Build frontend assets"
+    name: Build frontend assets
     runs-on: ubuntu-22.04
 
     steps:
@@ -40,24 +40,34 @@ jobs:
           - linux-x86-64-gnu
           - linux-armv7-gnu
           - linux-arm64-gnu
-          - x86_64-unknown-linux-musl
-          - aarch64-unknown-linux-musl
+          - linux-x86-64-musl
+          - linux-arm64-musl
         include:
           - name: linux-x86-64-gnu
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             cross: false
 
           - name: linux-armv7-gnu
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             target: armv7-unknown-linux-gnueabihf
             cross: true
 
           - name: linux-arm64-gnu
-            os: ubuntu-20.04
+            os: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
             cross: true
 
+          - name: linux-x86-64-musl
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-musl
+            cross: true
+
+          - name: linux-arm64-musl
+            os: ubuntu-22.04
+            target: aarch64-unknown-linux-musl
+            cross: true
+            
     steps:
       - uses: actions/checkout@v3
       - uses: actions-rs/toolchain@v1

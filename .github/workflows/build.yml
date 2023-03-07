@@ -6,93 +6,109 @@ on:
       - v*.*.*
 
 jobs:
-  build:
-    name: "Build and release"
+  frontend:
+    name: Build frontend assets
     runs-on: ubuntu-22.04
+
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
 
-    - name: Cache build assets
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          backend/target/
-          frontend/target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+      - uses: jetli/trunk-action@v0.4.0
+        with:
+          version: 'latest'
 
-    - name: Configure Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: wasm32-unknown-unknown
+      - name: Build frontend
+        run: trunk build
+        working-directory: frontend
 
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      - uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/dist
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_HUB_USERNAME }}
-        password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+  build:
+    name: Binaries for ${{ matrix.name }}
+    needs: frontend
+    runs-on: ${{ matrix.os }}
 
-    - name: Download trunk
-      uses: jetli/trunk-action@v0.1.0
-      with:
-        version: 'latest'
+    strategy:
+      matrix:
+        name:
+          - linux-x86-64-gnu
+          - linux-armv7-gnu
+          - linux-arm64-gnu
+          - linux-x86-64-musl
+          - linux-arm64-musl
+        include:
+          - name: linux-x86-64-gnu
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-gnu
+            platform: ~
+            cross: false
 
-    - name: Build target amd64
-      uses: actions-rs/cargo@v1
-      with:
-        use-cross: true
-        command: build
-        args: --release --target x86_64-unknown-linux-musl --manifest-path backend/Cargo.toml
+          - name: linux-armv7-gnu
+            os: ubuntu-22.04
+            target: armv7-unknown-linux-gnueabihf
+            platform: ~
+            cross: true
 
-    - name: Copy binary
-      run: |
-        mkdir bin
-        cp target/x86_64-unknown-linux-musl/release/mailcrab-backend bin/mailcrab-amd64
-      working-directory: ./backend
+          - name: linux-arm64-gnu
+            os: ubuntu-22.04
+            target: aarch64-unknown-linux-gnu
+            platform: ~
+            cross: true
 
-    - name: Cargo clean
-      run: cargo clean
-      working-directory: ./backend
+          - name: linux-x86-64-musl
+            os: ubuntu-22.04
+            target: x86_64-unknown-linux-musl
+            platform: amd64
+            cross: true
 
-    - name: Build target arm64
-      uses: actions-rs/cargo@v1
-      with:
-        use-cross: true
-        command: build
-        args: --release --target aarch64-unknown-linux-musl --manifest-path backend/Cargo.toml
+          - name: linux-arm64-musl
+            os: ubuntu-22.04
+            target: aarch64-unknown-linux-musl
+            platform: arm64
+            cross: true
+            
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
 
-    - name: Copy binary
-      run: |
-        cp target/aarch64-unknown-linux-musl/release/mailcrab-backend bin/mailcrab-arm64
-      working-directory: ./backend
+      - uses: actions/download-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/dist
 
-    - name: Build frontend
-      run: trunk build
-      working-directory: ./frontend
+      - name: Build
+        uses: actions-rs/cargo@master
+        with:
+          use-cross: ${{ matrix.cross }}
+          command: build
+          args: --release --locked --target ${{ matrix.target }}
+        working-directory: backend
 
-    - name: Build docker image
-      run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest -t marlonb/mailcrab:${{github.ref_name}}
+      # TODO: release binaries
 
-    - name: Archive (tar)
-      shell: bash
-      run: |
-        sha256sum -b "mailcrab-amd64-${{github.ref_name}}" > "mailcrab-amd64-${{github.ref_name}}.sha256"
-        sha256sum -b "mailcrab-arm64-${{github.ref_name}}" > "mailcrab-amd64-${{github.ref_name}}.arm64"
-      working-directory: bin
+      - name: Login to DockerHub
+        if: ${{ matrix.platform }}
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
 
-    - uses: softprops/action-gh-release@v1
-      with:
-        files: |
-          bin/mailcrab-*
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Copy binary
+        if: ${{ matrix.platform }}
+        run: |
+          cp target/${{ matrix.target }}/release/mailcrab-backend bin/${{ matrix.platform }}
+        working-directory: ./backend
+
+      - name: Build docker image
+        if: ${{ matrix.platform }}
+        run: docker buildx build --push --platform=linux/${{ matrix.platform }} . -t marlonb/mailcrab:latest -t marlonb/mailcrab:${{github.ref_name}}

@@ -5,24 +5,18 @@ on:
     branches: [ "main" ]
 
 jobs:
-  clippy_check:
+  check:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v1
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
+      - uses: actions/checkout@v3
+      - name: Install Rust (Stable)
+        run: curl https://sh.rustup.rs -sSf | sh -s -- -y
+      - run: rustup default stable
+      - run: rustup component add clippy
       - run: cargo check --manifest-path backend/Cargo.toml
       - run: cargo check --manifest-path frontend/Cargo.toml
-      - run: rustup component add clippy
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --manifest-path backend/Cargo.toml
-      - uses: actions-rs/clippy-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --manifest-path frontend/Cargo.toml
+      - run: cargo clippy --manifest-path backend/Cargo.toml
+      - run: cargo clippy --manifest-path frontend/Cargo.toml
       - run: cargo fmt --check --manifest-path backend/Cargo.toml
       - run: cargo fmt --check --manifest-path frontend/Cargo.toml
 

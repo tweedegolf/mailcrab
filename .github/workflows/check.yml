@@ -9,13 +9,13 @@ jobs:
     name: "Build frontend assets"
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout
-      - uses: actions-rs/toolchain
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
 
-      - uses: jetli/trunk-action
+      - uses: jetli/trunk-action@v0.4.0
         with:
           version: 'latest'
 
@@ -23,7 +23,7 @@ jobs:
         run: trunk build
         working-directory: frontend
 
-      - uses: actions/upload-artifact
+      - uses: actions/upload-artifact@v3
         with:
           name: frontend-build
           path: frontend/dist
@@ -55,19 +55,19 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout
-      - uses: actions-rs/toolchain
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           override: true
 
-      - uses: actions/download-artifact@master
+      - uses: actions/download-artifact@v3
         with:
           name: frontend-build
           path: frontend/dist
 
       - name: Build
-        uses: actions-rs/cargo
+        uses: actions-rs/cargo@master
         with:
           use-cross: ${{ matrix.cross }}
           command: build

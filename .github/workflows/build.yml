@@ -93,7 +93,7 @@ jobs:
         sha256sum -b "mailcrab-arm64-${{github.ref_name}}" > "mailcrab-amd64-${{github.ref_name}}.arm64"
       working-directory: bin
 
-    - uses: softprops/action-gh-release
+    - uses: softprops/action-gh-release@v1
       with:
         files: |
           bin/mailcrab-*

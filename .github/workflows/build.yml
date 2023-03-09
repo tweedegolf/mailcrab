@@ -69,24 +69,6 @@ jobs:
             platform: ~
             cross: true
 
-          - name: apple-arm64
-            os: ubuntu-20.04
-            target: aarch64-apple-darwin
-            platform: ~
-            cross: true
-
-          - name: apple-x86-64
-            os: ubuntu-20.04
-            target: aarch64-apple-darwin
-            platform: ~
-            cross: true
-
-          - name: windows-x86-64
-            os: ubuntu-20.04
-            target: x86_64-pc-windows-msvc
-            platform: ~
-            cross: true
-
           - name: linux-x86-64-musl
             os: ubuntu-20.04
             target: x86_64-unknown-linux-musl

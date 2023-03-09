@@ -11,7 +11,7 @@ use crate::types::MailMessage;
 
 #[derive(Clone, Debug)]
 struct MailHandler {
-    // inetrnal broadcast queue
+    // internal broadcast queue
     tx: Sender<MailMessage>,
 
     // incoming message buffer

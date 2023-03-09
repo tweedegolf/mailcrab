@@ -4,62 +4,27 @@ on:
   pull_request:
     branches: [ "main" ]
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  build:
+  check:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Cache build assets
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          backend/target/
-          frontend/target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-    - name: Configure Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        toolchain: stable
-        target: wasm32-unknown-unknown
-
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v2
-    
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
-
-    - name: Download trunk
-      uses: jetli/trunk-action@v0.1.0
-      with:
-        version: 'latest'
-
-    - name: Build target amd64
-      uses: actions-rs/cargo@v1
-      with:
-        use-cross: true
-        command: build
-        args: --release --target x86_64-unknown-linux-musl --manifest-path backend/Cargo.toml
-
-    - name: Cargo clean
-      run: cargo clean
-      working-directory: ./backend
-
-    - name: Build target arm64
-      uses: actions-rs/cargo@v1
-      with:
-        use-cross: true
-        command: build
-        args: --release --target aarch64-unknown-linux-musl --manifest-path backend/Cargo.toml
-
-    - name: Build frontend
-      run: trunk build
-      working-directory: ./frontend
+      - uses: actions/checkout@v3
+      - run: rustup toolchain install stable --profile minimal
+      - run: rustup component add clippy
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            frontend/target/
+            backend/target/
+          key: check-${{ hashFiles('**/Cargo.toml') }}
+          restore-keys: check-
+      - run: cargo check --manifest-path backend/Cargo.toml
+      - run: cargo check --manifest-path frontend/Cargo.toml
+      - run: cargo clippy --manifest-path backend/Cargo.toml
+      - run: cargo clippy --manifest-path frontend/Cargo.toml
+      - run: cargo fmt --check --manifest-path backend/Cargo.toml
+      - run: cargo fmt --check --manifest-path frontend/Cargo.toml

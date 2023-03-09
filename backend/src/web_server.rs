@@ -1,24 +1,22 @@
 use axum::{
+    body,
     extract::{
         ws::{self, WebSocket},
         Path, WebSocketUpgrade,
     },
-    http::StatusCode,
-    response::{Html, IntoResponse},
+    http::{header, StatusCode, Uri},
+    response::{Html, IntoResponse, Response},
     routing::get,
     Extension, Json, Router,
 };
-use std::{net::SocketAddr, sync::Arc};
-use tower_http::{
-    services::ServeDir,
-    trace::{DefaultMakeSpan, TraceLayer},
-};
+use std::{ffi::OsStr, net::SocketAddr, sync::Arc};
+use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::{event, Level};
 use uuid::Uuid;
 
 use crate::{
     types::{Action, MailMessage, MailMessageMetadata},
-    AppState,
+    AppState, Asset,
 };
 
 /// send mail message metadata to websocket clients when broadcaster by the SMTP server
@@ -142,19 +140,48 @@ async fn message_body_handler(
     }
 }
 
+async fn not_found() -> Response {
+    Response::builder()
+        .status(StatusCode::NOT_FOUND)
+        .body(body::boxed(body::Full::from("404")))
+        .unwrap()
+}
+
 async fn index(Extension(state): Extension<Arc<AppState>>) -> impl IntoResponse {
     Html(state.index.as_ref().expect("index.html not found").clone())
 }
 
-pub async fn http_server(app_state: Arc<AppState>, port: u16) {
-    let serve_dir = ServeDir::new("dist");
+async fn static_handler(uri: Uri) -> impl IntoResponse {
+    let path = uri.path().trim_start_matches('/');
+    let mime = std::path::Path::new(path)
+        .extension()
+        .and_then(OsStr::to_str)
+        .and_then(|ext| match ext.to_lowercase().as_str() {
+            "js" => Some("text/javascript"),
+            "css" => Some("text/css"),
+            "svg" => Some("image/svg+xml"),
+            "png" => Some("image/png"),
+            "wasm" => Some("application/wasm"),
+            "woff2" => Some("font/woff2"),
+            _ => None,
+        });
 
+    match (Asset::get(path), mime) {
+        (Some(content), Some(mime)) => Response::builder()
+            .header(header::CONTENT_TYPE, mime)
+            .body(body::boxed(body::Full::from(content.data)))
+            .unwrap(),
+        _ => not_found().await,
+    }
+}
+
+pub async fn http_server(app_state: Arc<AppState>, port: u16) {
     let mut router = Router::new()
         .route("/ws", get(ws_handler))
         .route("/api/messages", get(messages_handler))
         .route("/api/message/:id", get(message_handler))
         .route("/api/message/:id/body", get(message_body_handler))
-        .nest_service("/static", serve_dir);
+        .nest_service("/static", get(static_handler));
 
     if app_state.index.is_some() {
         router = router.route("/", get(index));

@@ -1,6 +1,6 @@
 FROM alpine:3.16
 ARG TARGETARCH
 WORKDIR /app
-COPY "./backend/bin/$TARGETARCH" /app/mailcrab
+COPY --chmod=755 "./bin/$TARGETARCH" /app/mailcrab
 CMD ["/app/mailcrab"]
 EXPOSE 1080 1025

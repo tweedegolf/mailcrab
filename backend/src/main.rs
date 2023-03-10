@@ -4,7 +4,7 @@ use std::{
     env, process,
     sync::{Arc, RwLock},
 };
-use tokio::signal;
+use tokio::signal::unix;
 use tokio::sync::broadcast::Receiver;
 use tracing::{event, Level};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
@@ -83,7 +83,7 @@ async fn main() {
     });
 
     // receive and broadcast mail messages
-    tokio::spawn(async move {
+    let smtp_task = tokio::spawn(async move {
         if let Err(e) = mail_server::smtp_listen(("0.0.0.0", smtp_port), tx) {
             eprintln!("MailCrab error: {}", e);
         }
@@ -91,7 +91,7 @@ async fn main() {
 
     // store broadcasted messages in a key/value store
     let state = app_state.clone();
-    tokio::spawn(async move {
+    let storage_task = tokio::spawn(async move {
         loop {
             if let Ok(message) = storage_rx.recv().await {
                 if let Ok(mut storage) = state.storage.write() {
@@ -101,15 +101,29 @@ async fn main() {
         }
     });
 
-    tokio::task::spawn(async move {
+    let http_task = tokio::task::spawn(async move {
         http_server(app_state, http_port).await;
     });
 
-    signal::ctrl_c()
-        .await
-        .expect("failed to install Ctrl+C handler");
-
-    process::exit(0);
+    // We use select! to poll between all tokio tasks,
+    // including signals
+    let mut terminate =
+        unix::signal(unix::SignalKind::terminate()).expect("Cannot install signal handler!");
+    let mut interrupt =
+        unix::signal(unix::SignalKind::interrupt()).expect("Cannot install signal handler!");
+    tokio::select! {
+        _ = storage_task => {}
+        _ = http_task => {}
+        _ = smtp_task => {}
+        _ = terminate.recv() => {
+            event!(Level::INFO, "SIGTERM received! Exiting...");
+            process::exit(0);
+        }
+        _ = interrupt.recv() => {
+            event!(Level::INFO, "SIGINT received! Exiting...");
+            process::exit(0);
+        }
+    }
 }
 
 #[cfg(test)]

@@ -1,11 +1,13 @@
 use rust_embed::{EmbeddedFile, RustEmbed};
 use std::{
     collections::HashMap,
-    env, process,
+    convert::Infallible,
+    env,
     sync::{Arc, RwLock},
 };
-use tokio::signal;
-use tokio::sync::broadcast::Receiver;
+use tokio::sync::broadcast::{Receiver, Sender};
+use tokio::time::Duration;
+use tokio_graceful_shutdown::{SubsystemHandle, Toplevel};
 use tracing::{event, Level};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use types::{MailMessage, MessageId};
@@ -47,6 +49,50 @@ fn load_index() -> Option<String> {
     )
 }
 
+async fn storage(
+    mut storage_rx: Receiver<MailMessage>,
+    state: Arc<AppState>,
+    handle: SubsystemHandle,
+) -> Result<(), Infallible> {
+    let mut running = true;
+
+    while running {
+        tokio::select! {
+            incoming = storage_rx.recv() => {
+                if let Ok(message) = incoming {
+                    if let Ok(mut storage) = state.storage.write() {
+                        storage.insert(message.id, message);
+                    }
+                }
+            },
+            _ = handle.on_shutdown_requested() => {
+                running = false;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+async fn mail_server(
+    smtp_port: u16,
+    tx: Sender<MailMessage>,
+    handle: SubsystemHandle,
+) -> Result<(), Infallible> {
+    let task = tokio::task::spawn_blocking(move || {
+        if let Err(e) = mail_server::smtp_listen(("0.0.0.0", smtp_port), tx) {
+            event!(Level::ERROR, "MailCrab mail server error {e}");
+        }
+    });
+
+    tokio::select! {
+        _ = task => {},
+        _ = handle.on_shutdown_requested() => {}
+    };
+
+    Ok(())
+}
+
 #[tokio::main]
 async fn main() {
     // initialize logging
@@ -67,14 +113,12 @@ async fn main() {
 
     event!(
         Level::INFO,
-        "MailCrab server starting http on port {} and smtp on port {}",
-        http_port,
-        smtp_port
+        "MailCrab server starting http on port {http_port} and smtp on port {smtp_port}"
     );
 
     // initialize internal broadcast queue
     let (tx, rx) = tokio::sync::broadcast::channel::<MailMessage>(16);
-    let mut storage_rx = rx.resubscribe();
+    let storage_rx = rx.resubscribe();
     let app_state = Arc::new(AppState {
         rx,
         storage: Default::default(),
@@ -82,34 +126,24 @@ async fn main() {
         prefix,
     });
 
-    // receive and broadcast mail messages
-    tokio::spawn(async move {
-        if let Err(e) = mail_server::smtp_listen(("0.0.0.0", smtp_port), tx) {
-            eprintln!("MailCrab error: {}", e);
-        }
-    });
-
     // store broadcasted messages in a key/value store
     let state = app_state.clone();
-    tokio::spawn(async move {
-        loop {
-            if let Ok(message) = storage_rx.recv().await {
-                if let Ok(mut storage) = state.storage.write() {
-                    storage.insert(message.id, message);
-                }
-            }
-        }
-    });
 
-    tokio::task::spawn(async move {
-        http_server(app_state, http_port).await;
-    });
+    let result = Toplevel::new()
+        .start("Storage server", move |h| storage(storage_rx, state, h))
+        .start("Mail server", move |h| mail_server(smtp_port, tx, h))
+        .start("Web server", move |h| http_server(app_state, http_port, h))
+        .catch_signals()
+        .handle_shutdown_requests(Duration::from_millis(5000))
+        .await;
 
-    signal::ctrl_c()
-        .await
-        .expect("failed to install Ctrl+C handler");
+    if let Err(e) = result {
+        event!(Level::ERROR, "MailCrab error {e}");
+    } else {
+        event!(Level::INFO, "Thank you for using MailCrab!");
+    }
 
-    process::exit(0);
+    std::process::exit(0);
 }
 
 #[cfg(test)]
@@ -143,7 +177,7 @@ mod test {
                 body
             );
 
-            println!("Sending mail to {}", &to);
+            println!("Sending mail to {to}");
 
             let builder = Message::builder()
                 .from(format!("{from_name} <{from}>",).parse().unwrap())
@@ -182,7 +216,7 @@ mod test {
             let email = builder.multipart(multipart).unwrap();
 
             if let Err(e) = mailer.send(&email) {
-                eprintln!("{}", e);
+                eprintln!("{e}");
             }
 
             thread::sleep(time::Duration::from_secs(5));

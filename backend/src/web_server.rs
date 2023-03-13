@@ -9,7 +9,8 @@ use axum::{
     routing::get,
     Extension, Json, Router,
 };
-use std::{ffi::OsStr, net::SocketAddr, sync::Arc};
+use std::{convert::Infallible, ffi::OsStr, net::SocketAddr, sync::Arc};
+use tokio_graceful_shutdown::SubsystemHandle;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::{event, Level};
 use uuid::Uuid;
@@ -175,7 +176,11 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
     }
 }
 
-pub async fn http_server(app_state: Arc<AppState>, port: u16) {
+pub async fn http_server(
+    app_state: Arc<AppState>,
+    port: u16,
+    subsys: SubsystemHandle,
+) -> Result<(), Infallible> {
     let mut router = Router::new()
         .route("/ws", get(ws_handler))
         .route("/api/messages", get(messages_handler))
@@ -201,9 +206,14 @@ pub async fn http_server(app_state: Arc<AppState>, port: u16) {
     app = app.layer(Extension(app_state));
 
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    let server = axum::Server::bind(&addr).serve(app.into_make_service());
 
-    if let Err(e) = server.await {
-        event!(Level::ERROR, "Server error :{:?}", e);
+    if let Err(e) = axum::Server::bind(&addr)
+        .serve(app.into_make_service())
+        .with_graceful_shutdown(subsys.on_shutdown_requested())
+        .await
+    {
+        event!(Level::ERROR, "MailCrab web server error {e}");
     }
+
+    Ok(())
 }

@@ -3,7 +3,7 @@ use std::{
     collections::HashMap,
     convert::Infallible,
     env,
-    sync::{Arc, RwLock},
+    sync::{Arc, RwLock}, process,
 };
 use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::time::Duration;
@@ -137,13 +137,20 @@ async fn main() {
         .handle_shutdown_requests(Duration::from_millis(5000))
         .await;
 
-    if let Err(e) = result {
-        event!(Level::ERROR, "MailCrab error {e}");
-    } else {
-        event!(Level::INFO, "Thank you for using MailCrab!");
-    }
+    let exit_code = match result {
+        Err(e) => {
+            event!(Level::ERROR, "MailCrab error {e}");
+            // failure
+            1
+        }
+        _ =>  {
+            event!(Level::INFO, "Thank you for using MailCrab!");
+            // success
+            0
+        }
+    };
 
-    std::process::exit(0);
+    process::exit(exit_code);
 }
 
 #[cfg(test)]

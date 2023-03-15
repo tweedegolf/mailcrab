@@ -53,6 +53,14 @@ The default SMTP port is 1025, the default HTTP port is 1080. You can configure 
 docker run --rm -p 3000:1080 -p 2525:1025 marlonb/mailcrab:latest
 ```
 
+###  TLS
+
+You can enable TLS and authentication by setting the enviroment variable `ENABLE_TLS_AUTH=true`. MailCrab will generate a key-pair and print the self-signed certificate. Any username/password combination is accepted. For example:
+
+```
+docker run --rm --env ENABLE_TLS_AUTH=true -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
+```
+
 ### Path prefix
 
 You can configure a prefix path for the web interface by setting and environment variable named `MAILCRAB_PREFIX`, for example:

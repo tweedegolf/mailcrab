@@ -13,24 +13,26 @@ pub enum Action {
     Open(MessageId),
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AttachmentMetadata {
     filename: String,
     mime: String,
     size: String,
 }
 
-#[derive(Clone, Debug, Serialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MailMessageMetadata {
     pub id: MessageId,
     from: Address,
     to: Vec<Address>,
     subject: String,
-    time: i64,
+    pub time: i64,
     date: String,
     size: String,
     opened: bool,
-    attachments: Vec<AttachmentMetadata>,
+    pub has_html: bool,
+    pub has_plain: bool,
+    pub attachments: Vec<AttachmentMetadata>,
 }
 
 impl From<MailMessage> for MailMessageMetadata {
@@ -43,6 +45,8 @@ impl From<MailMessage> for MailMessageMetadata {
             time: message.time,
             date: message.date,
             size: message.size,
+            has_html: !message.html.is_empty(),
+            has_plain: !message.text.is_empty(),
             opened: message.opened,
             attachments: message
                 .attachments
@@ -85,7 +89,7 @@ impl From<&mail_parser::MessagePart<'_>> for Attachment {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Default)]
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
 pub struct Address {
     name: Option<String>,
     email: Option<String>,

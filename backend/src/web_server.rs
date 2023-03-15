@@ -100,10 +100,12 @@ async fn messages_handler(
     Extension(state): Extension<Arc<AppState>>,
 ) -> Result<Json<Vec<MailMessageMetadata>>, StatusCode> {
     if let Ok(storage) = state.storage.read() {
-        let messages = storage
+        let mut messages = storage
             .iter()
             .map(|(_, message)| message.clone().into())
             .collect::<Vec<MailMessageMetadata>>();
+
+        messages.sort_by_key(|m| m.time);
 
         Ok(Json(messages))
     } else {

@@ -2,8 +2,8 @@ use rust_embed::{EmbeddedFile, RustEmbed};
 use std::{
     collections::HashMap,
     convert::Infallible,
-    env,
-    sync::{Arc, RwLock}, process,
+    env, process,
+    sync::{Arc, RwLock},
 };
 use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::time::Duration;
@@ -77,10 +77,11 @@ async fn storage(
 async fn mail_server(
     smtp_port: u16,
     tx: Sender<MailMessage>,
+    enable_tls_auth: bool,
     handle: SubsystemHandle,
 ) -> Result<(), Infallible> {
     let task = tokio::task::spawn_blocking(move || {
-        if let Err(e) = mail_server::smtp_listen(("0.0.0.0", smtp_port), tx) {
+        if let Err(e) = mail_server::smtp_listen(("0.0.0.0", smtp_port), tx, enable_tls_auth) {
             event!(Level::ERROR, "MailCrab mail server error {e}");
         }
     });
@@ -107,6 +108,12 @@ async fn main() {
     let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
     let http_port: u16 = get_env_port("HTTP_PORT", 1080);
 
+    // Enable auth implicitly enable TLS
+    let enable_tls_auth: bool = std::env::var("ENABLE_TLS_AUTH").map_or_else(
+        |_| false,
+        |v| v.to_ascii_lowercase().parse().unwrap_or(false),
+    );
+
     // construct path prefix
     let prefix = std::env::var("MAILCRAB_PREFIX").unwrap_or_default();
     let prefix = format!("/{}", prefix.trim_matches('/'));
@@ -131,7 +138,9 @@ async fn main() {
 
     let result = Toplevel::new()
         .start("Storage server", move |h| storage(storage_rx, state, h))
-        .start("Mail server", move |h| mail_server(smtp_port, tx, h))
+        .start("Mail server", move |h| {
+            mail_server(smtp_port, tx, enable_tls_auth, h)
+        })
         .start("Web server", move |h| http_server(app_state, http_port, h))
         .catch_signals()
         .handle_shutdown_requests(Duration::from_millis(5000))
@@ -143,7 +152,7 @@ async fn main() {
             // failure
             1
         }
-        _ =>  {
+        _ => {
             event!(Level::INFO, "Thank you for using MailCrab!");
             // success
             0

@@ -1,6 +1,9 @@
+use mailin::AuthMechanism;
 /// Receives email over SMTP, parses and broadcasts messages over an internal queue
 use mailin_embedded::{Server, SslConfig};
+use rcgen::{Certificate, CertificateParams, DistinguishedName, DnType};
 use std::{
+    fs,
     io::{self},
     net::ToSocketAddrs,
 };
@@ -89,23 +92,60 @@ impl mailin::Handler for MailHandler {
         _authentication_id: &str,
         _password: &str,
     ) -> mailin::Response {
-        mailin::response::INVALID_CREDENTIALS
+        mailin::response::AUTH_OK
     }
 }
 
 pub fn smtp_listen<A: ToSocketAddrs>(
     addr: A,
     tx: Sender<MailMessage>,
+    enable_tls_auth: bool,
 ) -> Result<(), mailin_embedded::err::Error> {
     let handler = MailHandler::create(tx);
     let mut server = Server::new(handler);
 
     let name = env!("CARGO_PKG_NAME");
 
-    server
-        .with_name(name)
-        .with_ssl(SslConfig::None)?
-        .with_addr(addr)?;
+    // Because mailin-embedded AUTH PLAIN only works over TLS,
+    // we need to have a valid SslConfig if auth is enabled.
+    // If auth is enabled but the SMTP server does not offer TLS
+    // it will returns 503 Bad sequence of commands.
+    match enable_tls_auth {
+        true => {
+            // We generate a self-signed cert on startup
+            event!(Level::INFO, "TLS Auth enabled! Generating certificate...");
+
+            let mut cert_params = CertificateParams::default();
+            let mut dis_name = DistinguishedName::new();
+            dis_name.push(DnType::CommonName, "mailcrab smtp server");
+            cert_params.distinguished_name = dis_name;
+
+            let cert =
+                Certificate::from_params(cert_params).expect("Cannot generate certificates!");
+            fs::write(
+                "cert.pem",
+                cert.serialize_pem()
+                    .expect("Cannot serialize certificate to PEM format!"),
+            )
+            .expect("Cannot write out certificate to a file!");
+            fs::write("key.pem", cert.serialize_private_key_pem())
+                .expect("Cannot write out key to a file!");
+
+            let ssl = SslConfig::SelfSigned {
+                cert_path: "cert.pem".to_string(),
+                key_path: "key.pem".to_string(),
+            };
+            server
+                .with_name(name)
+                .with_auth(AuthMechanism::Plain)
+                .with_ssl(ssl)?
+                .with_addr(addr)?;
+        }
+        false => {
+            let ssl = SslConfig::None;
+            server.with_name(name).with_ssl(ssl)?.with_addr(addr)?;
+        }
+    }
 
     server.serve()?;
 

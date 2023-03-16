@@ -174,6 +174,7 @@ mod test {
     use lettre::message::header::ContentType;
     use lettre::message::{Attachment, MultiPart, SinglePart};
     use lettre::{Message, SmtpTransport, Transport};
+    use local_ip_address::local_ip;
     use std::process::{Command, Stdio};
     use tokio::time::{sleep, Duration};
 
@@ -182,8 +183,9 @@ mod test {
         with_plain: bool,
         with_attachment: bool,
     ) -> Result<Message, Box<dyn std::error::Error>> {
+        let current_ip = local_ip()?;
         let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
-        let mailer = SmtpTransport::builder_dangerous("localhost")
+        let mailer = SmtpTransport::builder_dangerous(current_ip.to_string())
             .port(smtp_port)
             .build();
 
@@ -244,9 +246,10 @@ mod test {
         sleep(Duration::from_millis(1500)).await;
         send_message(false, true, true)?;
 
+        let current_ip = local_ip()?.to_string();
         let http_port: u16 = get_env_port("HTTP_PORT", 1080);
         let mails: Vec<MailMessageMetadata> =
-            reqwest::get(format!("http://localhost:{http_port}/api/messages"))
+            reqwest::get(format!("http://{current_ip}:{http_port}/api/messages"))
                 .await?
                 .json()
                 .await?;

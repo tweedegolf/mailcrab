@@ -245,10 +245,11 @@ mod test {
         send_message(false, true, true)?;
 
         let http_port: u16 = get_env_port("HTTP_PORT", 1080);
-        let mails: Vec<MailMessageMetadata> = reqwest::get(format!("http://localhost:{http_port}/api/messages"))
-            .await?
-            .json()
-            .await?;
+        let mails: Vec<MailMessageMetadata> =
+            reqwest::get(format!("http://localhost:{http_port}/api/messages"))
+                .await?
+                .json()
+                .await?;
 
         Ok(mails)
     }

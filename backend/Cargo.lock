@@ -868,7 +868,7 @@ dependencies = [
 
 [[package]]
 name = "mailcrab-backend"
-version = "0.8.0"
+version = "0.10.0"
 dependencies = [
  "axum",
  "base64 0.13.1",

@@ -265,7 +265,7 @@ mod test {
             .spawn()
             .unwrap();
         // wait for mailcrab to startup
-        sleep(Duration::from_millis(10_000)).await;
+        sleep(Duration::from_millis(20_000)).await;
         let messages = test_receive_messages().await;
         cmd.kill().unwrap();
         let messages = messages.unwrap();

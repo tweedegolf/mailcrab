@@ -36,8 +36,13 @@ jobs:
 
       - run: cargo check && cargo clippy && cargo fmt --check
         working-directory: backend
-        
-      - run: cargo test -- --nocapture
+
+      - name: Functional test
+        run: cargo test -- --nocapture
+        shell: bash
+        env:
+          HTTP_PORT: 26814
+          SMTP_PORT: 33543
         working-directory: backend
 
       - run: cargo check && cargo clippy && cargo fmt --check

@@ -164,6 +164,7 @@ async fn main() {
 
 #[cfg(test)]
 mod test {
+    use crate::get_env_port;
     use crate::types::MailMessageMetadata;
     use fake::faker::company::en::{Buzzword, CatchPhase};
     use fake::faker::internet::en::FreeEmail;
@@ -181,8 +182,9 @@ mod test {
         with_plain: bool,
         with_attachment: bool,
     ) -> Result<Message, Box<dyn std::error::Error>> {
+        let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
         let mailer = SmtpTransport::builder_dangerous("localhost")
-            .port(1025)
+            .port(smtp_port)
             .build();
 
         let to: String = FreeEmail().fake();
@@ -242,7 +244,8 @@ mod test {
         sleep(Duration::from_millis(1500)).await;
         send_message(false, true, true)?;
 
-        let mails: Vec<MailMessageMetadata> = reqwest::get("http://localhost:1080/api/messages")
+        let http_port: u16 = get_env_port("HTTP_PORT", 1080);
+        let mails: Vec<MailMessageMetadata> = reqwest::get(format!("http://localhost:{http_port}/api/messages"))
             .await?
             .json()
             .await?;

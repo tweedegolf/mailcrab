@@ -22,9 +22,7 @@ jobs:
             backend/target/
           key: check-${{ hashFiles('**/Cargo.toml') }}
           restore-keys: check-
-      - run: cargo check --manifest-path backend/Cargo.toml
-      - run: cargo check --manifest-path frontend/Cargo.toml
-      - run: cargo clippy --manifest-path backend/Cargo.toml
-      - run: cargo clippy --manifest-path frontend/Cargo.toml
-      - run: cargo fmt --check --manifest-path backend/Cargo.toml
-      - run: cargo fmt --check --manifest-path frontend/Cargo.toml
+      - run: cargo check && cargo clippy && cargo fmt --check && cargo test
+        working-directory: backend
+      - run: cargo check && cargo clippy && cargo fmt --check
+        working-directory: frontend

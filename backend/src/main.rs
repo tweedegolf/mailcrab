@@ -164,6 +164,8 @@ async fn main() {
 
 #[cfg(test)]
 mod test {
+    use crate::get_env_port;
+    use crate::types::MailMessageMetadata;
     use fake::faker::company::en::{Buzzword, CatchPhase};
     use fake::faker::internet::en::FreeEmail;
     use fake::faker::lorem::en::Paragraph;
@@ -172,70 +174,111 @@ mod test {
     use lettre::message::header::ContentType;
     use lettre::message::{Attachment, MultiPart, SinglePart};
     use lettre::{Message, SmtpTransport, Transport};
-    use rand::prelude::*;
-    use std::{thread, time};
+    use local_ip_address::local_ip;
+    use std::process::{Command, Stdio};
+    use tokio::time::{sleep, Duration};
 
-    #[test]
-    fn receive_email() {
-        let mailer = SmtpTransport::builder_dangerous("localhost")
-            .port(1025)
+    fn send_message(
+        with_html: bool,
+        with_plain: bool,
+        with_attachment: bool,
+    ) -> Result<Message, Box<dyn std::error::Error>> {
+        let current_ip = local_ip()?;
+        let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
+        let mailer = SmtpTransport::builder_dangerous(current_ip.to_string())
+            .port(smtp_port)
             .build();
-        let mut rng = rand::thread_rng();
 
-        loop {
-            let to: String = FreeEmail().fake();
-            let to_name: String = Name().fake();
-            let from: String = FreeEmail().fake();
-            let from_name: String = Name().fake();
-            let body: String = Paragraph(2..3).fake();
-            let html: String = format!(
-                "{}\n<p><a href=\"https://github.com/tweedegolf/mailcrab\">external link</a></p>",
-                body
-            );
+        let to: String = FreeEmail().fake();
+        let to_name: String = Name().fake();
+        let from: String = FreeEmail().fake();
+        let from_name: String = Name().fake();
+        let body: String = Paragraph(2..3).fake();
+        let html: String = format!(
+            "{}\n<p><a href=\"https://github.com/tweedegolf/mailcrab\">external link</a></p>",
+            body
+        );
 
-            println!("Sending mail to {to}");
+        let builder = Message::builder()
+            .from(format!("{from_name} <{from}>",).parse()?)
+            .to(format!("{to_name} <{to}>").parse()?)
+            .subject(CatchPhase().fake::<String>());
 
-            let builder = Message::builder()
-                .from(format!("{from_name} <{from}>",).parse().unwrap())
-                .to(format!("{to_name} <{to}>").parse().unwrap())
-                .subject(CatchPhase().fake::<String>());
+        let mut multipart = MultiPart::mixed().build();
 
-            let r: u8 = rng.gen();
-            let mut multipart = MultiPart::mixed().build();
-
-            match r % 3 {
-                0 => {
-                    multipart = multipart.multipart(
-                        MultiPart::alternative()
-                            .singlepart(SinglePart::plain(body))
-                            .singlepart(SinglePart::html(html)),
-                    );
-                }
-                1 => {
-                    multipart = multipart.singlepart(SinglePart::plain(body));
-                }
-                _ => {
-                    multipart = multipart.singlepart(SinglePart::html(html));
-                }
-            };
-
-            let filebody = std::fs::read("blank.pdf").unwrap();
-            let content_type = ContentType::parse("application/pdf").unwrap();
-
-            for _ in 0..(r % 3) {
-                let filename = format!("{}.pdf", Buzzword().fake::<&str>().to_ascii_lowercase());
-                let attachment =
-                    Attachment::new(filename).body(filebody.clone(), content_type.clone());
-                multipart = multipart.singlepart(attachment);
+        match (with_html, with_plain) {
+            (true, true) => {
+                multipart = multipart.multipart(
+                    MultiPart::alternative()
+                        .singlepart(SinglePart::plain(body))
+                        .singlepart(SinglePart::html(html)),
+                );
             }
-
-            let email = builder.multipart(multipart).unwrap();
-
-            if let Err(e) = mailer.send(&email) {
-                eprintln!("{e}");
+            (false, true) => {
+                multipart = multipart.singlepart(SinglePart::plain(body));
             }
+            (true, false) => {
+                multipart = multipart.singlepart(SinglePart::html(html));
+            }
+            _ => panic!("Email should have html or plain body"),
+        };
 
-            thread::sleep(time::Duration::from_secs(5));
+        if with_attachment {
+            let filebody = std::fs::read("blank.pdf")?;
+            let content_type = ContentType::parse("application/pdf")?;
+            let filename = format!("{}.pdf", Buzzword().fake::<&str>().to_ascii_lowercase());
+            let attachment = Attachment::new(filename).body(filebody.clone(), content_type.clone());
+            multipart = multipart.singlepart(attachment);
         }
+
+        let email = builder.multipart(multipart)?;
+
+        mailer.send(&email)?;
+
+        Ok(email)
+    }
+
+    async fn test_receive_messages() -> Result<Vec<MailMessageMetadata>, Box<dyn std::error::Error>>
+    {
+        send_message(true, true, false)?;
+        sleep(Duration::from_millis(1500)).await;
+        send_message(true, false, false)?;
+        sleep(Duration::from_millis(1500)).await;
+        send_message(false, true, true)?;
+
+        let current_ip = local_ip()?.to_string();
+        let http_port: u16 = get_env_port("HTTP_PORT", 1080);
+        let mails: Vec<MailMessageMetadata> =
+            reqwest::get(format!("http://{current_ip}:{http_port}/api/messages"))
+                .await?
+                .json()
+                .await?;
+
+        Ok(mails)
+    }
+
+    #[tokio::test]
+    async fn receive_message() {
+        let mut cmd = Command::new("cargo")
+            .arg("run")
+            .stdout(Stdio::inherit())
+            .spawn()
+            .unwrap();
+        // wait for mailcrab to startup
+        sleep(Duration::from_millis(20_000)).await;
+        let messages = test_receive_messages().await;
+        cmd.kill().unwrap();
+        let messages = messages.unwrap();
+
+        assert_eq!(messages.len(), 3);
+        assert!(messages[0].has_html);
+        assert!(messages[0].has_plain);
+        assert!(messages[0].attachments.is_empty());
+        assert!(messages[1].has_html);
+        assert!(!messages[1].has_plain);
+        assert!(messages[1].attachments.is_empty());
+        assert!(!messages[2].has_html);
+        assert!(messages[2].has_plain);
+        assert_eq!(messages[2].attachments.len(), 1);
     }
 }

@@ -121,25 +121,28 @@ pub fn smtp_listen<A: ToSocketAddrs>(
             let key_exists = fs::metadata("key.pem").is_ok();
 
             if cert_exists && key_exists {
-                event!(Level::INFO, "Certificate already exists! Skipping generation...");
+                event!(
+                    Level::INFO,
+                    "Certificate already exists! Skipping generation..."
+                );
             } else {
-              let mut cert_params = CertificateParams::default();
-              let mut dis_name = DistinguishedName::new();
-              dis_name.push(DnType::CommonName, name);
-              cert_params.distinguished_name = dis_name;
-  
-              event!(Level::INFO, "Generating certificate...");
-              let cert =
-                  Certificate::from_params(cert_params).expect("Cannot generate certificates!");
-              let cert_pem = cert
-                  .serialize_pem()
-                  .expect("Cannot serialize certificate to PEM format!");
-              
-              fs::write("cert.pem", &cert_pem).expect("Cannot write out certificate to a file!");
-              fs::write("key.pem", cert.serialize_private_key_pem())
-                  .expect("Cannot write out key to a file!");
-  
-              event!(Level::INFO, "Certificate generated:\n{cert_pem}",);
+                let mut cert_params = CertificateParams::default();
+                let mut dis_name = DistinguishedName::new();
+                dis_name.push(DnType::CommonName, name);
+                cert_params.distinguished_name = dis_name;
+
+                event!(Level::INFO, "Generating certificate...");
+                let cert =
+                    Certificate::from_params(cert_params).expect("Cannot generate certificates!");
+                let cert_pem = cert
+                    .serialize_pem()
+                    .expect("Cannot serialize certificate to PEM format!");
+
+                fs::write("cert.pem", &cert_pem).expect("Cannot write out certificate to a file!");
+                fs::write("key.pem", cert.serialize_private_key_pem())
+                    .expect("Cannot write out key to a file!");
+
+                event!(Level::INFO, "Certificate generated:\n{cert_pem}",);
             }
 
             let ssl = SslConfig::SelfSigned {

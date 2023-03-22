@@ -251,10 +251,10 @@ header {
           cursor: pointer;
           border: none;
           background-color: darken($light, 5%);
-          transition: all 150ms ease-in;
 
           &:hover, &.active {
             background: white;
+            transition: all 150ms ease-in;
           }
         }
 

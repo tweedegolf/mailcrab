@@ -26,17 +26,28 @@ pub fn view(props: &ViewMessageProps) -> Html {
 
     // fetch message details
     let id = props.message.id.clone();
+    let set_tab = props.set_tab.clone();
     let inner_message = message.clone();
     use_effect_with_deps(
         |message_id| {
             let message_id = message_id.clone();
             spawn_local(async move {
-                inner_message.set(fetch_message(&message_id).await);
+                let message = fetch_message(&message_id).await;
+                if message.html.is_empty() {
+                    set_tab.emit(Tab::Text)
+                } else {
+                    set_tab.emit(Tab::Formatted)
+                }
+                inner_message.set(message);
             });
             || ()
         },
         id,
     );
+
+    if message.id.is_empty() {
+        return html! {};
+    }
 
     let raw = base64::decode(&message.raw).unwrap();
     let raw = String::from_utf8_lossy(&raw);
@@ -46,6 +57,8 @@ pub fn view(props: &ViewMessageProps) -> Html {
     if !message.text.is_empty() && !message.html.is_empty() {
         tabs.push(("Plain", Tab::Text));
         tabs.push(("Formatted", Tab::Formatted));
+    } else if !message.text.is_empty() {
+        tabs.push(("Plain", Tab::Text));
     } else {
         tabs.push(("Formatted", Tab::Formatted));
     }

@@ -197,10 +197,15 @@ mod test {
         let to_name: String = Name().fake();
         let from: String = FreeEmail().fake();
         let from_name: String = Name().fake();
-        let body: String = Paragraph(2..3).fake();
+        let body: String = [
+            Paragraph(2..3).fake::<String>(),
+            Paragraph(2..3).fake::<String>(),
+            Paragraph(2..3).fake::<String>(),
+        ]
+        .join("\n");
         let html: String = format!(
             "{}\n<p><a href=\"https://github.com/tweedegolf/mailcrab\">external link</a></p>",
-            body
+            body.replace("\n", "<br>\n")
         );
 
         let builder = Message::builder()

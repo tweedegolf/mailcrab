@@ -25,6 +25,8 @@ pub struct MailMessageMetadata {
     pub size: String,
     pub opened: bool,
     pub attachments: Vec<AttachmentMetadata>,
+    pub envelope_from: String,
+    pub envelope_recipients: Vec<String>,
 }
 
 #[derive(Clone, PartialEq, Eq, Deserialize)]
@@ -50,6 +52,8 @@ pub struct MailMessage {
     pub attachments: Vec<Attachment>,
     pub raw: String,
     pub headers: HashMap<String, String>,
+    pub envelope_from: String,
+    pub envelope_recipients: Vec<String>,
 }
 
 #[derive(Serialize, Debug)]

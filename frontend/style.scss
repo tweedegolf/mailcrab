@@ -197,6 +197,25 @@ header {
       }
     }
 
+    .recipients > span.email + span.email:before {
+      content: ", <";
+      display: inline-block;
+    }
+
+    .recipients {
+      .email {
+        color: rgba(black, 0.3);
+
+        &::before {
+          content: '<';
+        }
+
+        &::after {
+          content: '>';
+        }
+      }
+    }
+
     .preview {
       display: flex;
       justify-content: space-between;

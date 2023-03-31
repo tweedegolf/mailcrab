@@ -1,7 +1,9 @@
 use crate::types::MailMessageMetadata;
 use js_sys::Date;
 use timeago::Formatter;
-use yew::{function_component, html, use_effect, use_state, Callback, Html, Properties};
+use yew::{
+    function_component, html, html_nested, use_effect, use_state, Callback, Html, Properties,
+};
 use yew_hooks::use_interval;
 
 #[derive(Properties, PartialEq)]
@@ -92,6 +94,16 @@ pub fn list(props: &MessageListProps) -> Html {
                     {&message.size}
                   </span>
                 </span>
+                  <span class="recipients">
+                  <span>{"Recipient(s): "} </span>
+                  {
+                      for message.envelope_recipients.clone().into_iter().map(|addr| html_nested! {
+                          <span class="email">
+                              {addr}
+                          </span>
+                      })
+                  }
+                  </span>
               </li>
             }
         })

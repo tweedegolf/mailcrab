@@ -19,6 +19,8 @@ struct MailHandler {
 
     // incoming message buffer
     buffer: Vec<u8>,
+    envelope_from: String,
+    envelope_recipients: Vec<String>,
 }
 
 impl MailHandler {
@@ -26,6 +28,8 @@ impl MailHandler {
         MailHandler {
             tx,
             buffer: Vec::new(),
+            envelope_from: String::new(),
+            envelope_recipients: Vec::new(),
         }
     }
 }
@@ -35,7 +39,9 @@ impl MailHandler {
         // parse the email and convert it to a internal data structure
         let parsed = mail_parser::Message::parse(&self.buffer)
             .ok_or("Could not parse email using mail_parser")?;
-        let message = parsed.try_into()?;
+        let mut message: MailMessage = parsed.try_into()?;
+        message.envelope_from = std::mem::take(&mut self.envelope_from);
+        message.envelope_recipients = std::mem::take(&mut self.envelope_recipients);
 
         // clear the message buffer
         self.buffer.clear();
@@ -54,11 +60,14 @@ impl mailin::Handler for MailHandler {
         mailin::response::OK
     }
 
-    fn mail(&mut self, _ip: std::net::IpAddr, _domain: &str, _from: &str) -> mailin::Response {
+    fn mail(&mut self, _ip: std::net::IpAddr, _domain: &str, from: &str) -> mailin::Response {
+        self.envelope_from = from.to_string();
         mailin::response::OK
     }
 
-    fn rcpt(&mut self, _to: &str) -> mailin::Response {
+    fn rcpt(&mut self, to: &str) -> mailin::Response {
+        // RCPT may be repeated any number of times, so store every value.
+        self.envelope_recipients.push(to.to_string());
         mailin::response::OK
     }
 
@@ -67,9 +76,15 @@ impl mailin::Handler for MailHandler {
         domain: &str,
         from: &str,
         _is8bit: bool,
-        _to: &[String],
+        to: &[String],
     ) -> mailin::Response {
-        event!(Level::INFO, "New email on {} from {}", domain, from);
+        event!(
+            Level::INFO,
+            "New email on {} from {} to {:?}",
+            domain,
+            from,
+            to
+        );
         mailin::response::OK
     }
 

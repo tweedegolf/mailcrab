@@ -33,23 +33,40 @@ pub struct MailMessageMetadata {
     pub has_html: bool,
     pub has_plain: bool,
     pub attachments: Vec<AttachmentMetadata>,
+    pub envelope_from: String,
+    pub envelope_recipients: Vec<String>,
 }
 
 impl From<MailMessage> for MailMessageMetadata {
     fn from(message: MailMessage) -> Self {
+        let MailMessage {
+            id,
+            from,
+            to,
+            subject,
+            time,
+            date,
+            size,
+            html,
+            text,
+            opened,
+            attachments,
+            envelope_from,
+            envelope_recipients,
+            ..
+        } = message;
         MailMessageMetadata {
-            id: message.id,
-            from: message.from,
-            to: message.to,
-            subject: message.subject,
-            time: message.time,
-            date: message.date,
-            size: message.size,
-            has_html: !message.html.is_empty(),
-            has_plain: !message.text.is_empty(),
-            opened: message.opened,
-            attachments: message
-                .attachments
+            id,
+            from,
+            to,
+            subject,
+            time,
+            date,
+            size,
+            has_html: !html.is_empty(),
+            has_plain: !text.is_empty(),
+            opened,
+            attachments: attachments
                 .into_iter()
                 .map(|a| AttachmentMetadata {
                     filename: a.filename,
@@ -57,6 +74,8 @@ impl From<MailMessage> for MailMessageMetadata {
                     size: a.size,
                 })
                 .collect::<Vec<AttachmentMetadata>>(),
+            envelope_from,
+            envelope_recipients,
         }
     }
 }
@@ -119,6 +138,8 @@ pub struct MailMessage {
     html: String,
     attachments: Vec<Attachment>,
     raw: String,
+    pub envelope_from: String,
+    pub envelope_recipients: Vec<String>,
 }
 
 impl MailMessage {
@@ -205,6 +226,7 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
             attachments,
             raw,
             headers,
+            ..MailMessage::default()
         })
     }
 }

@@ -171,7 +171,7 @@ mod test {
     use crate::get_env_port;
     use crate::types::MailMessageMetadata;
     use fake::faker::company::en::{Buzzword, CatchPhase};
-    use fake::faker::internet::en::FreeEmail;
+    use fake::faker::internet::en::SafeEmail;
     use fake::faker::lorem::en::Paragraph;
     use fake::faker::name::en::Name;
     use fake::Fake;
@@ -193,9 +193,9 @@ mod test {
             .port(smtp_port)
             .build();
 
-        let to: String = FreeEmail().fake();
+        let to: String = SafeEmail().fake();
         let to_name: String = Name().fake();
-        let from: String = FreeEmail().fake();
+        let from: String = SafeEmail().fake();
         let from_name: String = Name().fake();
         let body: String = [
             Paragraph(2..3).fake::<String>(),

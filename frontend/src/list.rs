@@ -95,14 +95,19 @@ pub fn list(props: &MessageListProps) -> Html {
                   </span>
                 </span>
                   <span class="recipients">
-                  <span>{"Recipient(s): "} </span>
-                  {
-                      for message.envelope_recipients.clone().into_iter().map(|addr| html_nested! {
-                          <span class="email">
-                              {addr}
-                          </span>
-                      })
-                  }
+                    <span class="label">
+                      if message.envelope_recipients.len() > 1 {
+                        {"Recipients: "}
+                      } else {
+                        {"Recipient: "}
+                      }
+                    </span>
+                    {for message.envelope_recipients.clone().into_iter().take(2).map(|addr| html_nested! {
+                      <span class="email">{addr}</span>
+                    })}
+                    if message.envelope_recipients.len() > 2 {
+                      <span class="etc">{", \u{2026}"}</span>
+                    }
                   </span>
               </li>
             }

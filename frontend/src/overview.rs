@@ -13,7 +13,7 @@ use crate::websocket::WebsocketService;
 pub enum Msg {
     Select(String),
     SetTab(Tab),
-    Message(MailMessageMetadata),
+    Message(Box<MailMessageMetadata>),
     Messages(Vec<MailMessageMetadata>),
     Remove(String),
     RemoveAll,
@@ -50,7 +50,7 @@ impl Component for Overview {
         let link = ctx.link().clone();
         spawn_local(async move {
             while let Some(message) = wss.receiver.next().await {
-                link.send_message(Msg::Message(message));
+                link.send_message(Msg::Message(Box::new(message)));
             }
         });
 
@@ -65,7 +65,7 @@ impl Component for Overview {
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
             Msg::Message(message) => {
-                self.messages.push(message);
+                self.messages.push(*message);
                 true
             }
             Msg::Messages(messages) => {

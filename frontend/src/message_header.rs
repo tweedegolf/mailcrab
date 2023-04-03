@@ -1,5 +1,5 @@
 use crate::types::MailMessage;
-use yew::{function_component, html, Html, Properties};
+use yew::{function_component, html, html_nested, Html, Properties};
 
 #[derive(Properties, Eq, PartialEq)]
 pub struct MessageHeaderProps {
@@ -50,6 +50,22 @@ pub fn view(props: &MessageHeaderProps) -> Html {
               <th>{"Subject"}</th>
               <td>{&message.subject}</td>
             </tr>
+            <tr>
+            <th>
+              if message.envelope_recipients.len() > 1 {
+                {"Recipients: "}
+              } else {
+                {"Recipient: "}
+              }
+            </th>
+            <td>
+              <span class="recipients">
+                {for message.envelope_recipients.clone().into_iter().map(|addr| html_nested! {
+                  <span class="email">{addr}</span>
+                })}
+              </span>
+            </td>
+          </tr>
           </tbody>
         </table>
         <div class="attachments">

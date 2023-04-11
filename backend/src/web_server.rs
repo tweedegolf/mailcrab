@@ -9,7 +9,12 @@ use axum::{
     routing::get,
     Extension, Json, Router,
 };
-use std::{convert::Infallible, ffi::OsStr, net::SocketAddr, sync::Arc};
+use std::{
+    convert::Infallible,
+    ffi::OsStr,
+    net::{IpAddr, SocketAddr},
+    sync::Arc,
+};
 use tokio_graceful_shutdown::SubsystemHandle;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::{event, Level};
@@ -179,8 +184,9 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
 }
 
 pub async fn http_server(
-    app_state: Arc<AppState>,
+    host: IpAddr,
     port: u16,
+    app_state: Arc<AppState>,
     subsys: SubsystemHandle,
 ) -> Result<(), Infallible> {
     let mut router = Router::new()
@@ -207,7 +213,7 @@ pub async fn http_server(
 
     app = app.layer(Extension(app_state));
 
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let addr = SocketAddr::from((host, port));
 
     if let Err(e) = axum::Server::bind(&addr)
         .serve(app.into_make_service())

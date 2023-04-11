@@ -9,6 +9,7 @@ Inspired by [MailHog](https://github.com/mailhog/MailHog) and [MailCatcher](http
 MailCrab was created as an exercise in Rust, trying out [Axum](https://github.com/tokio-rs/axum) and functional components with [Yew](https://yew.rs/), but most of all because it is really enjoyable to write Rust code.
 
 ## TLDR
+
 ```sh
 docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
 ```
@@ -53,7 +54,12 @@ The default SMTP port is 1025, the default HTTP port is 1080. You can configure 
 docker run --rm -p 3000:1080 -p 2525:1025 marlonb/mailcrab:latest
 ```
 
-###  TLS
+## Host
+
+You can specify the host address Mailcrab will listen on using the `HOST` environment variable. In the docker image the default
+address is `0.0.0.0`, when running Mailcrab directly using cargo or a binary, the default is `127.0.0.1`.
+
+### TLS
 
 You can enable TLS and authentication by setting the environment variable `ENABLE_TLS_AUTH=true`. MailCrab will generate a key-pair and print the self-signed certificate. Any username/password combination is accepted. For example:
 
@@ -82,20 +88,20 @@ The web interface will also be served at [http://localhost:1080/emails/](http://
 Usage in a `docker-compose.yml` file:
 
 ```yml
-version: "3.8"
+version: '3.8'
 services:
-    mailcrab:
-        image: marlonb/mailcrab:latest
-#        environment:
-#            ENABLE_TLS_AUTH: true # optionally enable TLS for the SMTP server
-#            MAILCRAB_PREFIX: emails # optionally prefix the webinterface with a path
-#        volumes:
-#           key.pem:/app/key.pem:ro # optionally provide your own keypair for TLS, else a pair will be generated
-#           cert.pem:/app/cert.pem:ro
-        ports:
-            - "1080:1080"
-            - "1025:1025"
-        networks: [default]
+  mailcrab:
+    image: marlonb/mailcrab:latest
+    #        environment:
+    #            ENABLE_TLS_AUTH: true # optionally enable TLS for the SMTP server
+    #            MAILCRAB_PREFIX: emails # optionally prefix the webinterface with a path
+    #        volumes:
+    #           key.pem:/app/key.pem:ro # optionally provide your own keypair for TLS, else a pair will be generated
+    #           cert.pem:/app/cert.pem:ro
+    ports:
+      - '1080:1080'
+      - '1025:1025'
+    networks: [default]
 ```
 
 ## Development

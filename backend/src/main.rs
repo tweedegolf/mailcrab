@@ -2,7 +2,9 @@ use rust_embed::{EmbeddedFile, RustEmbed};
 use std::{
     collections::HashMap,
     convert::Infallible,
-    env, process,
+    env,
+    net::IpAddr,
+    process,
     sync::{Arc, RwLock},
 };
 use tokio::sync::broadcast::{Receiver, Sender};
@@ -79,13 +81,14 @@ async fn storage(
 }
 
 async fn mail_server(
+    smtp_host: IpAddr,
     smtp_port: u16,
     tx: Sender<MailMessage>,
     enable_tls_auth: bool,
     handle: SubsystemHandle,
 ) -> Result<(), Infallible> {
     let task = tokio::task::spawn_blocking(move || {
-        if let Err(e) = mail_server::smtp_listen(("0.0.0.0", smtp_port), tx, enable_tls_auth) {
+        if let Err(e) = mail_server::smtp_listen((smtp_host, smtp_port), tx, enable_tls_auth) {
             event!(Level::ERROR, "MailCrab mail server error {e}");
         }
     });
@@ -109,6 +112,12 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
+    let host: IpAddr = env::var("HOST")
+        .as_deref()
+        .unwrap_or("127.0.0.1")
+        .parse()
+        .expect("Invalid HOST variable");
+
     let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
     let http_port: u16 = get_env_port("HTTP_PORT", 1080);
 
@@ -124,7 +133,7 @@ async fn main() {
 
     event!(
         Level::INFO,
-        "MailCrab server starting http on port {http_port} and smtp on port {smtp_port}"
+        "MailCrab http server starting on {host}:{http_port} and smtp server on {host}:{smtp_port}"
     );
 
     // initialize internal broadcast queue
@@ -143,9 +152,11 @@ async fn main() {
     let result = Toplevel::new()
         .start("Storage server", move |h| storage(storage_rx, state, h))
         .start("Mail server", move |h| {
-            mail_server(smtp_port, tx, enable_tls_auth, h)
+            mail_server(host, smtp_port, tx, enable_tls_auth, h)
         })
-        .start("Web server", move |h| http_server(app_state, http_port, h))
+        .start("Web server", move |h| {
+            http_server(host, http_port, app_state, h)
+        })
         .catch_signals()
         .handle_shutdown_requests(Duration::from_millis(5000))
         .await;
@@ -178,7 +189,6 @@ mod test {
     use lettre::message::header::ContentType;
     use lettre::message::{Attachment, MultiPart, SinglePart};
     use lettre::{Message, SmtpTransport, Transport};
-    use local_ip_address::local_ip;
     use std::process::{Command, Stdio};
     use tokio::time::{sleep, Duration};
 
@@ -187,9 +197,8 @@ mod test {
         with_plain: bool,
         with_attachment: bool,
     ) -> Result<Message, Box<dyn std::error::Error>> {
-        let current_ip = local_ip()?;
         let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
-        let mailer = SmtpTransport::builder_dangerous(current_ip.to_string())
+        let mailer = SmtpTransport::builder_dangerous("127.0.0.1".to_string())
             .port(smtp_port)
             .build();
 
@@ -255,10 +264,9 @@ mod test {
         sleep(Duration::from_millis(1500)).await;
         send_message(false, true, true)?;
 
-        let current_ip = local_ip()?.to_string();
         let http_port: u16 = get_env_port("HTTP_PORT", 1080);
         let mails: Vec<MailMessageMetadata> =
-            reqwest::get(format!("http://{current_ip}:{http_port}/api/messages"))
+            reqwest::get(format!("http://127.0.0.1:{http_port}/api/messages"))
                 .await?
                 .json()
                 .await?;

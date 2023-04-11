@@ -66,11 +66,9 @@ impl Component for Overview {
         match msg {
             Msg::Message(message) => {
                 self.messages.push(*message);
-                true
             }
             Msg::Messages(messages) => {
                 self.messages = messages;
-                true
             }
             Msg::Select(id) => {
                 self.selected = id.clone();
@@ -84,14 +82,12 @@ impl Component for Overview {
                     if self.sender.try_send(Action::Open(id)).is_err() {
                         error!("Error registering email as opened");
                     }
+
                     unopened_message.opened = true;
                 }
-
-                true
             }
             Msg::SetTab(tab) => {
                 self.tab = tab;
-                true
             }
             Msg::Remove(id) => {
                 self.messages.retain(|m| m.id != id);
@@ -99,16 +95,20 @@ impl Component for Overview {
                 if self.sender.try_send(Action::Remove(id)).is_err() {
                     error!("Error removing email");
                 }
-
-                true
             }
             Msg::RemoveAll => {
                 if self.sender.try_send(Action::RemoveAll).is_ok() {
                     self.messages.clear();
                 }
-                true
             }
-        }
+        };
+
+        true
+    }
+
+    fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
+        let count = self.messages.iter().filter(|m| !m.opened).count();
+        gloo_utils::document().set_title(&format!("MailCrab ({})", count));
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {

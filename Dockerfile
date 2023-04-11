@@ -1,6 +1,6 @@
 FROM alpine:3.16
 ARG TARGETARCH
-ARG HOST="0.0.0.0"
+ENV HOST="0.0.0.0"
 WORKDIR /app
 COPY --chmod=755 "./bin/$TARGETARCH" /app/mailcrab
 CMD ["/app/mailcrab"]

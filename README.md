@@ -56,7 +56,8 @@ docker run --rm -p 3000:1080 -p 2525:1025 marlonb/mailcrab:latest
 
 ## Host
 
-You can specify the host address Mailcrab will listen on using the `HOST` environment variable. In the docker image the default
+You can specify the host address Mailcrab will listen on for HTTP request using
+the `HTTP_HOST` environment variable. In the docker image the default
 address is `0.0.0.0`, when running Mailcrab directly using cargo or a binary, the default is `127.0.0.1`.
 
 ### TLS

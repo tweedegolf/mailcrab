@@ -1,9 +1,11 @@
 use rust_embed::{EmbeddedFile, RustEmbed};
+
 use std::{
     collections::HashMap,
     convert::Infallible,
     env,
     net::IpAddr,
+    net::Ipv4Addr,
     process,
     sync::{Arc, RwLock},
 };
@@ -112,11 +114,13 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let host: IpAddr = env::var("HOST")
+    let smtp_host = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
+
+    let http_host: IpAddr = env::var("HTTP_HOST")
         .as_deref()
         .unwrap_or("127.0.0.1")
         .parse()
-        .expect("Invalid HOST variable");
+        .expect("Invalid HTTP_HOST variable");
 
     let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
     let http_port: u16 = get_env_port("HTTP_PORT", 1080);
@@ -133,7 +137,7 @@ async fn main() {
 
     event!(
         Level::INFO,
-        "MailCrab http server starting on {host}:{http_port} and smtp server on {host}:{smtp_port}"
+        "MailCrab HTTP server starting on {http_host}:{http_port} and SMTP server on {smtp_host}:{smtp_port}"
     );
 
     // initialize internal broadcast queue
@@ -152,10 +156,10 @@ async fn main() {
     let result = Toplevel::new()
         .start("Storage server", move |h| storage(storage_rx, state, h))
         .start("Mail server", move |h| {
-            mail_server(host, smtp_port, tx, enable_tls_auth, h)
+            mail_server(smtp_host, smtp_port, tx, enable_tls_auth, h)
         })
         .start("Web server", move |h| {
-            http_server(host, http_port, app_state, h)
+            http_server(http_host, http_port, app_state, h)
         })
         .catch_signals()
         .handle_shutdown_requests(Duration::from_millis(5000))

@@ -105,6 +105,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a4a4ddaa51a5bc52a6948f74c06d20aaaddb71924eab79b8c97a8c556e942d6a"
 
 [[package]]
+name = "base64-compat"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a8d4d2746f89841e49230dd26917df1876050f95abafafbe34f47cb534b88d7"
+dependencies = [
+ "byteorder",
+]
+
+[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -895,11 +904,11 @@ dependencies = [
 
 [[package]]
 name = "mailin"
-version = "0.6.1"
+version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "24d0411d6d3cf6baacae37461dc5b0a32b9c68ae99ddef61bcd88174b8da890a"
+checksum = "d7f3483ec615b5179c8923e55a0c5caca26c6f4bfb375fb699054f84ca77ba44"
 dependencies = [
- "base64 0.13.1",
+ "base64-compat",
  "either",
  "log",
  "nom",
@@ -908,12 +917,12 @@ dependencies = [
 
 [[package]]
 name = "mailin-embedded"
-version = "0.7.1"
+version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e2f29d14249fb45f7795bc8564175ca7b963254217f24e8cde84ba40d38b58cc"
+checksum = "6afb9280cdf7039eb3a11b781ec710ba6bf3bb64990cf28e6f241b89104a997a"
 dependencies = [
  "bufstream",
- "lazy_static",
+ "cfg-if",
  "log",
  "mailin",
  "rustls",

@@ -5,8 +5,8 @@ use std::{
     convert::Infallible,
     env,
     net::IpAddr,
-    net::Ipv4Addr,
     process,
+    str::FromStr,
     sync::{Arc, RwLock},
 };
 use tokio::sync::broadcast::{Receiver, Sender};
@@ -33,11 +33,11 @@ pub struct AppState {
 #[folder = "../frontend/dist"]
 pub struct Asset;
 
-/// get a port number from the environment or return default value
-fn get_env_port(name: &'static str, default: u16) -> u16 {
+/// get a configuration from the environment or return default value
+fn parse_env_var<T: FromStr>(name: &'static str, default: T) -> T {
     env::var(name)
         .unwrap_or_default()
-        .parse()
+        .parse::<T>()
         .unwrap_or(default)
 }
 
@@ -114,16 +114,10 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let smtp_host = IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0));
-
-    let http_host: IpAddr = env::var("HTTP_HOST")
-        .as_deref()
-        .unwrap_or("127.0.0.1")
-        .parse()
-        .expect("Invalid HTTP_HOST variable");
-
-    let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
-    let http_port: u16 = get_env_port("HTTP_PORT", 1080);
+    let smtp_host: IpAddr = parse_env_var("SMTP_HOST", [0, 0, 0, 0].into());
+    let http_host: IpAddr = parse_env_var("HTTP_HOST", [127, 0, 0, 1].into());
+    let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
+    let http_port: u16 = parse_env_var("HTTP_PORT", 1080);
 
     // Enable auth implicitly enable TLS
     let enable_tls_auth: bool = std::env::var("ENABLE_TLS_AUTH").map_or_else(
@@ -183,7 +177,7 @@ async fn main() {
 
 #[cfg(test)]
 mod test {
-    use crate::get_env_port;
+    use crate::parse_env_var;
     use crate::types::MailMessageMetadata;
     use fake::faker::company::en::{Buzzword, CatchPhase};
     use fake::faker::internet::en::SafeEmail;
@@ -201,7 +195,7 @@ mod test {
         with_plain: bool,
         with_attachment: bool,
     ) -> Result<Message, Box<dyn std::error::Error>> {
-        let smtp_port: u16 = get_env_port("SMTP_PORT", 1025);
+        let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
         let mailer = SmtpTransport::builder_dangerous("127.0.0.1".to_string())
             .port(smtp_port)
             .build();
@@ -268,7 +262,7 @@ mod test {
         sleep(Duration::from_millis(1500)).await;
         send_message(false, true, true)?;
 
-        let http_port: u16 = get_env_port("HTTP_PORT", 1080);
+        let http_port: u16 = parse_env_var("HTTP_PORT", 1080);
         let mails: Vec<MailMessageMetadata> =
             reqwest::get(format!("http://127.0.0.1:{http_port}/api/messages"))
                 .await?

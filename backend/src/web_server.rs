@@ -33,16 +33,9 @@ async fn ws_handler(
     ws.on_upgrade(|mut socket: WebSocket| async move {
         let mut receive = state.rx.resubscribe();
         let mut active = true;
-        let mut ping_interval = tokio::time::interval(tokio::time::Duration::from_secs(30));
 
         while active {
             tokio::select! {
-                _ = ping_interval.tick() => {
-                    if socket.send(ws::Message::Ping(vec![])).await.is_err() {
-                        event!(Level::INFO, "WS client disconnected");
-                        active = false;
-                    }
-                },
                 internal_received = receive.recv() => {
                     match internal_received {
                         Ok(message) => {
@@ -88,9 +81,6 @@ async fn ws_handler(
                                     event!(Level::WARN, "unknown action {:?}", msg);
                                 },
                             }
-                        },
-                        Some(Ok(ws::Message::Pong(_))) => {
-                            // pass
                         },
                         Some(Ok(ws::Message::Close(_))) | None => {
                             event!(Level::INFO, "websocket closed");

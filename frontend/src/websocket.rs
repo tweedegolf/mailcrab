@@ -15,7 +15,7 @@ pub struct WebsocketService {
 
 impl WebsocketService {
     pub fn new() -> Self {
-        // convert http URL to wesocket URL
+        // convert http URL to websocket URL
         let mut location = web_sys::window()
             .unwrap()
             .location()

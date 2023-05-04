@@ -16,7 +16,7 @@ jobs:
         with:
           body: |
             Docker releases: https://hub.docker.com/repository/docker/marlonb/mailcrab/tags
-            Run docker image using: `docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:${{ github.ref_name }}`
+            Run docker image using: `docker run --rm -p 10801:10801 -p 1025:1025 marlonb/mailcrab:${{ github.ref_name }}`
           draft: true
           append_body: true
         env:

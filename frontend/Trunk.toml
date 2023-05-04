@@ -4,9 +4,9 @@ port = 8000
 
 [[proxy]]
 rewrite = "/ws"
-backend = "ws://127.0.0.1:1080/ws"
+backend = "ws://127.0.0.1:10801/ws"
 ws = true
 
 [[proxy]]
 rewrite = "/api"
-backend = "http://127.0.0.1:1080/api"
+backend = "http://127.0.0.1:10801/api"

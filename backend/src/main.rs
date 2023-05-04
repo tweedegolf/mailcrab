@@ -117,7 +117,7 @@ async fn main() {
     let smtp_host: IpAddr = parse_env_var("SMTP_HOST", [0, 0, 0, 0].into());
     let http_host: IpAddr = parse_env_var("HTTP_HOST", [127, 0, 0, 1].into());
     let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
-    let http_port: u16 = parse_env_var("HTTP_PORT", 1080);
+    let http_port: u16 = parse_env_var("HTTP_PORT", 10801);
 
     // Enable auth implicitly enable TLS
     let enable_tls_auth: bool = std::env::var("ENABLE_TLS_AUTH").map_or_else(
@@ -262,7 +262,7 @@ mod test {
         sleep(Duration::from_millis(1500)).await;
         send_message(false, true, true)?;
 
-        let http_port: u16 = parse_env_var("HTTP_PORT", 1080);
+        let http_port: u16 = parse_env_var("HTTP_PORT", 10801);
         let mails: Vec<MailMessageMetadata> =
             reqwest::get(format!("http://127.0.0.1:{http_port}/api/messages"))
                 .await?

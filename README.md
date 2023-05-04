@@ -11,7 +11,7 @@ MailCrab was created as an exercise in Rust, trying out [Axum](https://github.co
 ## TLDR
 
 ```sh
-docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
+docker run --rm -p 10801:10801 -p 1025:1025 marlonb/mailcrab:latest
 ```
 
 ## Features
@@ -41,17 +41,17 @@ The backend also accepts a few commands over the websocket, to mark a message as
 To run MailCrab only docker is required. Start MailCrab using the following command:
 
 ```sh
-docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
+docker run --rm -p 10801:10801 -p 1025:1025 marlonb/mailcrab:latest
 ```
 
-Open a browser and navigate to [http://localhost:1080](http://localhost:1080) to view the web interface.
+Open a browser and navigate to [http://localhost:10801](http://localhost:10801) to view the web interface.
 
 ### Ports
 
-The default SMTP port is 1025, the default HTTP port is 1080. You can configure the SMTP and HTTP port using environment variables (`SMTP_PORT` and `HTTP_PORT`), or by exposing them on different ports using docker:
+The default SMTP port is 1025, the default HTTP port is 10801. You can configure the SMTP and HTTP port using environment variables (`SMTP_PORT` and `HTTP_PORT`), or by exposing them on different ports using docker:
 
 ```sh
-docker run --rm -p 3000:1080 -p 2525:1025 marlonb/mailcrab:latest
+docker run --rm -p 3000:10801 -p 2525:1025 marlonb/mailcrab:latest
 ```
 
 ## Host
@@ -65,13 +65,13 @@ address is `0.0.0.0`, when running Mailcrab directly using cargo or a binary, th
 You can enable TLS and authentication by setting the environment variable `ENABLE_TLS_AUTH=true`. MailCrab will generate a key-pair and print the self-signed certificate. Any username/password combination is accepted. For example:
 
 ```sh
-docker run --rm --env ENABLE_TLS_AUTH=true -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
+docker run --rm --env ENABLE_TLS_AUTH=true -p 10801:10801 -p 1025:1025 marlonb/mailcrab:latest
 ```
 
 It is also possible to provide your own certificate by mounting a key and a certificate to `/app/key.pem` and `/app/cert.pem`:
 
 ```sh
-docker run --rm --env ENABLE_TLS_AUTH=true -v key.pem:/app/key.pem:ro -v cert.pem:/app/cert.pem:ro -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
+docker run --rm --env ENABLE_TLS_AUTH=true -v key.pem:/app/key.pem:ro -v cert.pem:/app/cert.pem:ro -p 10801:10801 -p 1025:1025 marlonb/mailcrab:latest
 ```
 
 ### Path prefix
@@ -79,10 +79,10 @@ docker run --rm --env ENABLE_TLS_AUTH=true -v key.pem:/app/key.pem:ro -v cert.pe
 You can configure a prefix path for the web interface by setting and environment variable named `MAILCRAB_PREFIX`, for example:
 
 ```sh
-docker run --rm --env MAILCRAB_PREFIX=emails -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
+docker run --rm --env MAILCRAB_PREFIX=emails -p 10801:10801 -p 1025:1025 marlonb/mailcrab:latest
 ```
 
-The web interface will also be served at [http://localhost:1080/emails/](http://localhost:1080/emails/)
+The web interface will also be served at [http://localhost:10801/emails/](http://localhost:10801/emails/)
 
 ### docker compose
 
@@ -100,7 +100,7 @@ services:
     #           key.pem:/app/key.pem:ro # optionally provide your own keypair for TLS, else a pair will be generated
     #           cert.pem:/app/cert.pem:ro
     ports:
-      - '1080:1080'
+      - '10801:10801'
       - '1025:1025'
     networks: [default]
 ```

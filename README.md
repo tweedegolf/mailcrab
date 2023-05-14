@@ -53,7 +53,7 @@ The default SMTP port is 1025, the default HTTP port is 1080. You can configure 
 ```sh
 docker run --rm -p 3000:1080 -p 2525:1025 marlonb/mailcrab:latest
 ```
-
+  
 ## Host
 
 You can specify the host address Mailcrab will listen on for HTTP request using
@@ -83,6 +83,10 @@ docker run --rm --env MAILCRAB_PREFIX=emails -p 1080:1080 -p 1025:1025 marlonb/m
 ```
 
 The web interface will also be served at [http://localhost:1080/emails/](http://localhost:1080/emails/)
+
+### Reverse proxy
+
+See [the reverse proxy guide](./Reverse_proxy.md).
 
 ### docker compose
 

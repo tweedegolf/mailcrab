@@ -1,5 +1,5 @@
 [package]
-name = "mailcrab-backend"
+name = "mailcrab"
 version = "0.10.0"
 edition = "2021"
 publish = false

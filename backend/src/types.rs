@@ -2,6 +2,7 @@ use chrono::{DateTime, Local};
 use mail_parser::MimeHeaders;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use tracing::{event, Level};
 use uuid::Uuid;
 
 pub type MessageId = Uuid;
@@ -162,7 +163,17 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
     fn try_from(message: mail_parser::Message) -> Result<Self, Self::Error> {
         let from = match message.from() {
             mail_parser::HeaderValue::Address(addr) => addr.into(),
-            _ => return Err("Could not parse From  address header"),
+            _ => {
+                event!(
+                    Level::WARN,
+                    "Could not parse 'From' address header, setting placeholder 'from' address."
+                );
+
+                Address {
+                    name: Some("No from header".to_string()),
+                    email: Some("no-from-header@example.com".to_string()),
+                }
+            }
         };
 
         let to = match message.to() {
@@ -171,7 +182,17 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
                 .iter()
                 .map(|addr| addr.into())
                 .collect::<Vec<Address>>(),
-            _ => return Err("Could not parse To address header"),
+            _ => {
+                event!(
+                    Level::WARN,
+                    "Could not parse 'To' address header, setting placeholder 'to' address."
+                );
+
+                vec![Address {
+                    name: Some("No to header".to_string()),
+                    email: Some("no-to-header@example.com".to_string()),
+                }]
+            }
         };
 
         let subject = message.subject().unwrap_or_default().to_owned();

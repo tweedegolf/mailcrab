@@ -1,0 +1,32 @@
+#!/bin/sh
+
+SVR="${SMTP_SERVER:-127.0.0.1}"
+PRT="${SMTP_PORT:-1025}"
+
+swaks \
+    --helo sample.direct.ry \
+    --from multi_rcpt_to@script \
+    --to many@mailcrab,foo@bar,foo@baz,dupli@ca.te,dupli@ca.te \
+    --server ${SVR}:${PRT} \
+    --data - << HERE
+From: Many RCPT TO<recipient@metadata>
+To: See Envelope <not@these.headers>
+Subject: Multiple RCPT TO in one SMTP session
+Date: %DATE%
+
+Hi,
+
+This message is for checking
+how mailcrab handles multiple RCPT TO in one SMTP session.
+
+Inspirated by
+  git log --patch 0699315cb2509^1..0699315cb2509
+
+Bye
+
+P.S.
+This message proofs
+that mailcrab can handle multiple RCPT TO in one SMTP session.  :-)
+HERE
+
+# l l

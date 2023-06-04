@@ -9,6 +9,7 @@ use std::{
 };
 use tokio::sync::broadcast::Sender;
 use tracing::{event, Level};
+use uuid::Uuid;
 
 use crate::types::MailMessage;
 
@@ -19,6 +20,7 @@ struct MailHandler {
 
     // incoming message buffer
     buffer: Vec<u8>,
+    id: Uuid,
     envelope_from: String,
     envelope_recipients: Vec<String>,
 }
@@ -28,6 +30,7 @@ impl MailHandler {
         MailHandler {
             tx,
             buffer: Vec::new(),
+            id: Uuid::new_v4(),
             envelope_from: String::new(),
             envelope_recipients: Vec::new(),
         }
@@ -40,6 +43,7 @@ impl MailHandler {
         let parsed = mail_parser::Message::parse(&self.buffer)
             .ok_or("Could not parse email using mail_parser")?;
         let mut message: MailMessage = parsed.try_into()?;
+        message.id = std::mem::take(&mut self.id);
         message.envelope_from = std::mem::take(&mut self.envelope_from);
         message.envelope_recipients = std::mem::take(&mut self.envelope_recipients);
 
@@ -94,12 +98,14 @@ impl mailin::Handler for MailHandler {
     }
 
     fn data_end(&mut self) -> mailin::Response {
+        event!(Level::INFO, "uuid {:?}", self.id,);
+        let que_text = format!("Queued as {}", self.id);
         if let Err(e) = self.parse_mail() {
             event!(Level::WARN, "Error parsing email: {}", e);
 
             mailin::response::Response::custom(500, "Error parsing message".to_string())
         } else {
-            mailin::response::OK
+            mailin::response::Response::custom(250, que_text.to_string())
         }
     }
 

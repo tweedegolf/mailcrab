@@ -37,6 +37,38 @@ The frontend initially performs a call to `/api/messages` to receive all existin
 
 The backend also accepts a few commands over the websocket, to mark a message as opened, to delete a single message or delete all messages.
 
+## How to build
+
+Install [Rust](https://www.rust-lang.org/learn/get-started)
+
+```sh
+# Have web bundler "trunk" available
+cargo install --locked trunk
+
+# Add WebAssembly as build target
+rustup target add wasm32-unknown-unknown
+
+# get the source code, like
+git clone https://github.com/tweedegolf/mailcrab.git
+# or fetch it from https://github.com/tweedegolf/mailcrab/releases
+# and unpack it yourself
+
+# change working directory to mailcrab
+cd mailcrab
+
+# bundle the frontend
+cd frontend
+trunk build --filehash false --release
+
+# make the binary that includes the frontend stuff
+cd ../backend
+cargo build --release
+# there is now target/release/mailcrab-backend
+
+# rename it or copy it into what want. example given
+cp target/release/mailcrab-backend ../mailcrab
+```
+
 ## Installation and usage
 
 To run MailCrab only docker is required. Start MailCrab using the following command:
@@ -129,20 +161,7 @@ cargo test send_sample_messages -- --ignored
 
 ## Development
 
-Install [Rust](https://www.rust-lang.org/learn/get-started) and [Trunk](https://trunkrs.dev/)
-
 ```sh
-# Add wasm as target if it it not present after following the install instructions for Trunk
-rustup target add wasm32-unknown-unknown
-
-# clone the code
-git clone git@github.com:tweedegolf/mailcrab.git
-
-# start the backend
-cd backend
-cargo run
-
-# serve the frontend (in a new terminal window)
 cd ../frontend
 trunk serve
 

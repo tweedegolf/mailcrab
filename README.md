@@ -161,9 +161,15 @@ cargo test send_sample_messages -- --ignored
 
 ## Development
 
+Web development
 ```sh
 cd ../frontend
 trunk serve
+```
+Connect with a web browser to what is defined as `[serve]`
+in the `Trunk.toml`.  Current config is `127.0.0.1:8000`.
+In another window you _edit_ `frontend/**` files.
+Upon _save_ does `trunk` a _rebuild_ of the frontend. On-the-fly!
 
 # optionally send test messages in an interval
 cd ../backend

@@ -150,7 +150,7 @@ async fn message_body_handler(
 ) -> Result<Html<String>, StatusCode> {
     if let Ok(storage) = state.storage.read() {
         match storage.get(&id) {
-            Some(message) => Ok(Html(message.body())),
+            Some(message) => Ok(Html(message.render())),
             _ => Err(StatusCode::NOT_FOUND),
         }
     } else {

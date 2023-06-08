@@ -32,6 +32,7 @@ pub struct MailMessageMetadata {
 #[derive(Clone, PartialEq, Eq, Deserialize)]
 pub struct Attachment {
     pub filename: String,
+    pub content_id: Option<String>,
     pub mime: String,
     pub size: String,
     pub content: String,

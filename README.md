@@ -172,6 +172,11 @@ In another window you _edit_ `frontend/**` files.
 Upon _save_ does `trunk` a _rebuild_ of the frontend. On-the-fly!
 
 # optionally send test messages in an interval
+```
 cd ../backend
 cargo test
 ```
+Do know that that test instance of mailcrab only lives shortly
+and most time you will be waiting on starting up.
+You could use that time to visit it with a webbrowser,
+pressing reload several times might be needed.

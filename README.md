@@ -109,6 +109,15 @@ services:
     networks: [default]
 ```
 
+## Sample messages
+
+The `sample` directory contains a couple of test messages. These can be sent using by running:
+
+```sh
+cd backend/
+cargo test send_sample_messages -- --ignored
+```
+
 ## Development
 
 Install [Rust](https://www.rust-lang.org/learn/get-started) and [Trunk](https://trunkrs.dev/)

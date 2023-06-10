@@ -95,9 +95,9 @@ impl mailin::Handler for MailHandler {
 
     fn data_end(&mut self) -> mailin::Response {
         if let Err(e) = self.parse_mail() {
-            event!(Level::WARN, "Error parsing email: {}", e);
+                event!(Level::WARN, "Error parsing email: {}", e);
 
-            mailin::response::Response::custom(500, "Error parsing message".to_string())
+                mailin::response::Response::custom(500, "Error parsing message".to_string())
         } else {
             mailin::response::OK
         }

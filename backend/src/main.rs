@@ -187,7 +187,7 @@ mod test {
     use lettre::address::Envelope;
     use lettre::message::header::ContentType;
     use lettre::message::{Attachment, MultiPart, SinglePart};
-    use lettre::{Address, Message, SmtpTransport, Transport};
+    use lettre::{Message, SmtpTransport, Transport, Address};
     use std::process::{Command, Stdio};
     use tokio::time::{sleep, Duration};
 
@@ -309,21 +309,10 @@ mod test {
 
         while let Some(Ok(entry)) = paths.next() {
             let message = std::fs::read_to_string(entry.path()).unwrap();
-            let mut lines = message.lines();
+            let mut lines= message.lines();
 
-            let sender = lines
-                .next()
-                .unwrap()
-                .trim_start_matches("Sender: ")
-                .parse::<Address>()
-                .unwrap();
-            let recipients = lines
-                .next()
-                .unwrap()
-                .trim_start_matches("Recipients: ")
-                .split(',')
-                .map(|r| r.trim().parse::<Address>().unwrap())
-                .collect::<Vec<Address>>();
+            let sender = lines.next().unwrap().trim_start_matches("Sender: ").parse::<Address>().unwrap();
+            let recipients = lines.next().unwrap().trim_start_matches("Recipients: ").split(',').map(|r| r.trim().parse::<Address>().unwrap()).collect::<Vec<Address>>();
             let envelope = Envelope::new(Some(sender), recipients).unwrap();
 
             let email = lines.collect::<Vec<&str>>().join("\n");

@@ -184,9 +184,10 @@ mod test {
     use fake::faker::lorem::en::Paragraph;
     use fake::faker::name::en::Name;
     use fake::Fake;
+    use lettre::address::Envelope;
     use lettre::message::header::ContentType;
     use lettre::message::{Attachment, MultiPart, SinglePart};
-    use lettre::{Message, SmtpTransport, Transport};
+    use lettre::{Address, Message, SmtpTransport, Transport};
     use std::process::{Command, Stdio};
     use tokio::time::{sleep, Duration};
 
@@ -295,5 +296,28 @@ mod test {
         assert!(!messages[2].has_html);
         assert!(messages[2].has_plain);
         assert_eq!(messages[2].attachments.len(), 1);
+    }
+
+    #[tokio::test]
+    #[ignore]
+    async fn send_sample_messages() {
+        let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
+        let mut paths = std::fs::read_dir("../samples").unwrap();
+        let mailer = SmtpTransport::builder_dangerous("127.0.0.1".to_string())
+            .port(smtp_port)
+            .build();
+
+        while let Some(Ok(entry)) = paths.next() {
+            let message = std::fs::read_to_string(entry.path()).unwrap();
+            let mut lines= message.lines();
+
+            let sender = lines.next().unwrap().trim_start_matches("Sender: ").parse::<Address>().unwrap();
+            let recipients = lines.next().unwrap().trim_start_matches("Recipients: ").split(',').map(|r| r.trim().parse::<Address>().unwrap()).collect::<Vec<Address>>();
+            let envelope = Envelope::new(Some(sender), recipients).unwrap();
+
+            let email = lines.collect::<Vec<&str>>().join("\n");
+
+            mailer.send_raw(&envelope, email.as_bytes()).unwrap();
+        }
     }
 }

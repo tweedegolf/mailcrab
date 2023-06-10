@@ -84,7 +84,6 @@ impl From<MailMessage> for MailMessageMetadata {
 #[derive(Clone, Debug, Serialize)]
 pub struct Attachment {
     filename: String,
-    content_id: Option<String>,
     mime: String,
     size: String,
     content: String,
@@ -104,7 +103,6 @@ impl From<&mail_parser::MessagePart<'_>> for Attachment {
         Attachment {
             filename,
             mime,
-            content_id: part.content_id().map(|s| s.to_owned()),
             size: humansize::format_size(part.contents().len(), humansize::DECIMAL),
             content: base64::encode(part.contents()),
         }
@@ -150,23 +148,11 @@ impl MailMessage {
         self.opened = true;
     }
 
-    pub fn render(&self) -> String {
+    pub fn body(&self) -> String {
         if self.html.is_empty() {
             self.text.clone()
         } else {
-            let mut html = self.html.clone();
-
-            for attachement in &self.attachments {
-                if let Some(content_id) = &attachement.content_id {
-                    let from = format!("cid:{content_id}");
-                    let to = format!("data:{};base64,{}", attachement.mime, attachement.content);
-
-                    dbg!(&from, &to);
-                    html = html.replace(&from, &to);
-                }
-            }
-
-            html
+            self.html.clone()
         }
     }
 }

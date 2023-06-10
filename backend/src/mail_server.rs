@@ -80,7 +80,7 @@ impl mailin::Handler for MailHandler {
     ) -> mailin::Response {
         event!(
             Level::INFO,
-            "New email on {} from {} to {:?}",
+            "Incoming message on {} from {} to {:?}",
             domain,
             from,
             to

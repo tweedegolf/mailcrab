@@ -35,7 +35,7 @@ impl MailHandler {
 }
 
 impl MailHandler {
-    fn parse_mail(&mut self) -> Result<MailMessage, &'static str> {
+    fn parse_mail(&mut self) -> Result<(), &'static str> {
         // parse the email and convert it to a internal data structure
         let parsed = mail_parser::Message::parse(&self.buffer)
             .ok_or("Could not parse email using mail_parser")?;
@@ -48,10 +48,10 @@ impl MailHandler {
 
         // send the message to a internal queue
         self.tx
-            .send(message.clone())
+            .send(message)
             .map_err(|_| "Could not send email to own broadcast channel")?;
 
-        Ok(message)
+        Ok(())
     }
 }
 
@@ -80,7 +80,7 @@ impl mailin::Handler for MailHandler {
     ) -> mailin::Response {
         event!(
             Level::INFO,
-            "Incoming message on {} from {} to {:?}",
+            "New email on {} from {} to {:?}",
             domain,
             from,
             to
@@ -94,16 +94,12 @@ impl mailin::Handler for MailHandler {
     }
 
     fn data_end(&mut self) -> mailin::Response {
-        match self.parse_mail() {
-            Err(e) => {
-                event!(Level::WARN, "Error parsing email: {}", e);
+        if let Err(e) = self.parse_mail() {
+            event!(Level::WARN, "Error parsing email: {}", e);
 
-                mailin::response::Response::custom(500, "Error parsing message".to_string())
-            }
-            Ok(message) => mailin::response::Response::custom(
-                250,
-                format!("2.0.0 Ok: queued as {}", message.id),
-            ),
+            mailin::response::Response::custom(500, "Error parsing message".to_string())
+        } else {
+            mailin::response::OK
         }
     }
 

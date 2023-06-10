@@ -180,7 +180,7 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
             _ => {
                 event!(
                     Level::WARN,
-                    "Could not parse 'From' address header, setting placeholder address."
+                    "Could not parse 'From' address header, setting placeholder 'from' address."
                 );
 
                 Address {
@@ -199,7 +199,7 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
             _ => {
                 event!(
                     Level::WARN,
-                    "Could not parse 'To' address header, setting placeholder address."
+                    "Could not parse 'To' address header, setting placeholder 'to' address."
                 );
 
                 vec![Address {

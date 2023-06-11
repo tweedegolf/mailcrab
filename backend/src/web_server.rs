@@ -22,7 +22,7 @@ use uuid::Uuid;
 
 use crate::{
     types::{Action, MailMessage, MailMessageMetadata},
-    AppState, Asset,
+    AppState, Asset, VERSION_BE,
 };
 
 /// send mail message metadata to websocket clients when broadcaster by the SMTP server
@@ -158,6 +158,14 @@ async fn message_body_handler(
     }
 }
 
+/// return version
+async fn version_handler() -> Result<Json<String>, StatusCode> {
+    // Ok(Json(format!("{{ "version_be": "{}" }}", VERSION_BE)))
+    // TODO  Returning much better JSON.
+    //       For starters should all the ' from line below become "
+    Ok(Json(format!("{{ 'version_be': '{}' }}", VERSION_BE)))
+}
+
 async fn not_found() -> Response {
     Response::builder()
         .status(StatusCode::NOT_FOUND)
@@ -204,6 +212,7 @@ pub async fn http_server(
         .route("/api/messages", get(messages_handler))
         .route("/api/message/:id", get(message_handler))
         .route("/api/message/:id/body", get(message_body_handler))
+        .route("/api/version", get(version_handler))
         .nest_service("/static", get(static_handler));
 
     if app_state.index.is_some() {

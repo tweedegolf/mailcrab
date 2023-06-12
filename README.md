@@ -109,6 +109,16 @@ services:
     networks: [default]
 ```
 
+## Sample messages
+
+The `samples` directory contains a couple of test messages.
+These can be sent using by running:
+
+```sh
+cd backend/
+cargo run --example crabfeeder ../samples/*l
+```
+
 ## Development
 
 Install [Rust](https://www.rust-lang.org/learn/get-started) and [Trunk](https://trunkrs.dev/)

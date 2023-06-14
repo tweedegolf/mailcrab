@@ -1,0 +1,34 @@
+From alice@example.com  Wed Jun 14 21:54:42 2023
+Return-Path: <alice@example.com>
+X-Original-To: bob@example.org
+Delivered-To: bob@example.org
+Received: from burner23.example.com (burner23.example.com [411.510.102.64])
+	by smtp.example.org (Postfix) with ESMTPS id 37A611FD5
+	for <bob@example.org>; Wed, 14 Jun 2023 21:54:42 +0200 (CEST)
+Received: from marketing.example.com (marketing.example.com [822.618.249.210])
+	by burner23.example.com (Postfix) with ESMTP id 08F8D20202
+	for <bob@example.org>; Wed, 14 Jun 2023 19:54:53 +0000 (UTC)
+Received: by marketing.example.com (Postfix, from userid 1000)
+	id 8515030417C; Wed, 14 Jun 2023 21:54:52 +0200 (CEST)
+Date: Wed, 14 Jun 2023 21:54:52 +0200
+From: Alice <alice@example.com>
+To: Bob <bob@example.org>
+Subject: Normal email
+Message-ID: <ZIobDEz5VVeDW4x/@marketing.example.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Length: 229
+Lines: 10
+
+Hello Bob,
+ 
+Here an email what I consider a normal email.
+No need to argue about what normal email is,
+we argee on that this email is just plain text.
+Surely no HTML nor any other formatting.
+
+Alice
+-- 
+Silence is hard to parse
+

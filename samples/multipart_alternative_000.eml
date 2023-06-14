@@ -1,0 +1,127 @@
+From bounces+848413-1129-bob=example.com@sgmail.github.com  Wed Jun 14 22:16:18 2023
+Return-Path: <bounces+848413-1129-bob=example.com@sgmail.github.com>
+X-Original-To: bob@example.org
+Delivered-To: bob@example.org
+Received: from o11.sgmail.github.com (o11.sgmail.github.com [167.89.101.202])
+	by smtp.example.org (Postfix with ESMTPS id 609691FD3
+	for <bob@example.org>; Wed, 14 Jun 2023 22:16:18 +0200 (CEST)
+Received: by filterdrecv-6fc9d64f45-57wzj with SMTP id filterdrecv-6fc9d64f45-57wzj-1-648A201B-6D
+        2023-06-14 20:16:27.737956708 +0000 UTC m=+3011880.205878901
+Received: from github-lowworker-65e4a37.va3-iad.github.net (unknown)
+	by geopod-ismtpd-30 (SG) with ESMTP id DQyFkqSXQ6uHP9t0lQgZaQ
+	for <bob@example.org>; Wed, 14 Jun 2023 20:16:27.639 +0000 (UTC)
+Received: from github.com (localhost [127.0.0.1])
+	by github-lowworker-65e4a37.va3-iad.github.net (Postfix) with ESMTP id 6FE7B1D80270
+	for <bob@example.org>; Wed, 14 Jun 2023 13:16:27 -0700 (PDT)
+Date: Wed, 14 Jun 2023 20:16:27 +0000 (UTC)
+From: Bob <notifications@github.com>
+Message-ID: <tweedegolf/mailcrab/pull/84@github.com>
+Subject: [tweedegolf/mailcrab] new file: samples/normal.eml (PR #84)
+Mime-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="--==_mimepart_648a201b6e8fb_71ced03440573";
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Precedence: list
+X-GitHub-Sender: bob
+X-GitHub-Recipient: bob
+X-GitHub-Reason: your_activity
+List-ID: tweedegolf/mailcrab <mailcrab.tweedegolf.github.com>
+List-Archive: https://github.com/tweedegolf/mailcrab
+List-Post: <mailto:reply+AIOK43XSRVXYGSNDVR7MJF6CS5REDACTED@reply.github.com>
+List-Unsubscribe: <mailto:unsub+AIOK43XSRVXYGSNDVR7MJF6CS5REDACTED@reply.github.com>,
+ <https://github.com/notifications/unsubscribe/AIOK43XJCHIDIT7BEKK7CL3XLILREDACTED>
+X-Auto-Response-Suppress: All
+X-GitHub-Recipient-Address: bob@example.org
+Reply-To: tweedegolf/mailcrab
+	<reply+AIOK43XSRVXYGSNDVR7MJF6CS5REDACTED@reply.github.com>
+To: tweedegolf/mailcrab <mailcrab@noreply.github.com>
+Cc: Bob <bob@example.org>, Your activity
+	<your_activity@noreply.github.com>
+X-Entity-ID: /f+S0qXulHaHjNbb6hGdxg==
+Content-Length: 3394
+Lines: 82
+
+
+----==_mimepart_648a201b6e8fb_71ced03440573
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+
+a sample email, straight forward.
+You can view, comment on, or merge this pull request online at:
+
+  https://github.com/tweedegolf/mailcrab/pull/84
+
+-- Commit Summary --
+
+  * new file: samples/normal.eml
+
+-- File Changes --
+
+    A samples/normal.eml (34)
+
+-- Patch Links --
+
+https://github.com/tweedegolf/mailcrab/pull/84.patch
+https://github.com/tweedegolf/mailcrab/pull/84.diff
+
+-- 
+Reply to this email directly or view it on GitHub:
+https://github.com/tweedegolf/mailcrab/pull/84
+You are receiving this because you are subscribed to this thread.
+
+Message ID: &lt;tweedegolf/mailcrab/pull/84@github.com&gt;
+
+----==_mimepart_648a201b6e8fb_71ced03440573
+Content-Type: text/html; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+
+<p dir="auto">a sample email, straight forward.</p>
+
+<hr>
+
+<h4>You can view, comment on, or merge this pull request online at:</h4>
+<p>&nbsp;&nbsp;<a href='https://github.com/tweedegolf/mailcrab/pull/84'>https://github.com/tweedegolf/mailcrab/pull/84</a></p>
+
+<h4>Commit Summary</h4>
+<ul>
+  <li><a href="https://github.com/tweedegolf/mailcrab/pull/84/commits/085042f9844074ac13d4724eaac62fc460e3750e" class="commit-link">085042f</a>  new file: samples/normal.eml</li>
+</ul>
+
+<h4 style="display: inline-block">File Changes </h4> <p style="display: inline-block">(<a href="https://github.com/tweedegolf/mailcrab/pull/84/files">1&nbsp;file</a>)</p>
+<ul>
+  <li>
+    <strong>A</strong>
+    <a href="https://github.com/tweedegolf/mailcrab/pull/84/files#diff-64ce62eed9604b347aca11eafdd29d4dcc7aa07e119252b4be70611887a253bf">samples/normal.eml</a>
+    (34)
+  </li>
+</ul>
+
+<h4>Patch Links:</h4>
+<ul>
+  <li><a href='https://github.com/tweedegolf/mailcrab/pull/84.patch'>https://github.com/tweedegolf/mailcrab/pull/84.patch</a></li>
+  <li><a href='https://github.com/tweedegolf/mailcrab/pull/84.diff'>https://github.com/tweedegolf/mailcrab/pull/84.diff</a></li>
+</ul>
+
+<p style="font-size:small;-webkit-text-size-adjust:none;color:#666;">&mdash;<br />Reply to this email directly, <a href="https://github.com/tweedegolf/mailcrab/pull/84">view it on GitHub</a>, or <a href="https://github.com/notifications/unsubscribe-auth/AIOK43TKZYXE4NYHIKJJFC3XLILREDACTED">unsubscribe</a>.<br />You are receiving this because you are subscribed to this thread.<img src="https://github.com/notifications/beacon/AIOK43XOP72BU4WQJ5PWTXLXLILREDACTED.gif" height="1" width="1" alt="" /><span style="color: transparent; font-size: 0; display: none; visibility: hidden; overflow: hidden; opacity: 0; width: 0; height: 0; max-width: 0; max-height: 0; mso-hide: all">Message ID: <span>&lt;tweedegolf/mailcrab/pull/84</span><span>@</span><span>github</span><span>.</span><span>com&gt;</span></span></p>
+<script type="application/ld+json">[
+{
+"@context": "http://schema.org",
+"@type": "EmailMessage",
+"potentialAction": {
+"@type": "ViewAction",
+"target": "https://github.com/tweedegolf/mailcrab/pull/84",
+"url": "https://github.com/tweedegolf/mailcrab/pull/84",
+"name": "View Pull Request"
+},
+"description": "View this Pull Request on GitHub",
+"publisher": {
+"@type": "Organization",
+"name": "GitHub",
+"url": "https://github.com"
+}
+}
+]</script>
+
+----==_mimepart_648a201b6e8fb_71ced03440573--
+

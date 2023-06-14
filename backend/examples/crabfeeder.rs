@@ -7,6 +7,7 @@ use core::str::FromStr;
 use lettre::address::Envelope;
 use lettre::{Address, SmtpTransport, Transport};
 use std::env;
+use std::net::IpAddr;
 
 fn usage(name: &str) {
     println!(
@@ -14,6 +15,8 @@ fn usage(name: &str) {
 
 and those filenames will be injected as email into mailcrab.
 
+You can configure the connection destination with setting
+environment variables SMTP_SERVER and SMTP_PORT.
 "#
     )
 }
@@ -36,8 +39,10 @@ fn parse_env_var<T: FromStr>(name: &'static str, default: T) -> T {
 }
 
 fn process(filenames: Vec<String>) {
+    let smtp_server: IpAddr = parse_env_var("SMTP_SERVER", [127, 0, 0, 1].into());
     let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
-    let mailer = SmtpTransport::builder_dangerous("127.0.0.1".to_string())
+    println!("I: Will connecting {:?}:{:?}", smtp_server, smtp_port);
+    let mailer = SmtpTransport::builder_dangerous(smtp_server.to_string())
         .port(smtp_port)
         .build();
 
@@ -55,5 +60,6 @@ fn process(filenames: Vec<String>) {
         let email = lines.collect::<Vec<&str>>().join("\n");
 
         mailer.send_raw(&envelope, email.as_bytes()).unwrap();
+        println!("I: Having send {f}");
     }
 }

@@ -10,7 +10,7 @@ use std::{
 use tokio::sync::broadcast::Sender;
 use tracing::{event, Level};
 
-use crate::types::MailMessage;
+use crate::{types::MailMessage, VERSION_BE};
 
 #[derive(Clone, Debug)]
 struct MailHandler {
@@ -58,11 +58,19 @@ impl MailHandler {
 impl mailin::Handler for MailHandler {
     fn helo(&mut self, _ip: std::net::IpAddr, _domain: &str) -> mailin::Response {
         mailin::response::OK
+        // NOTE that response is more as just '250 OK'
     }
 
     fn mail(&mut self, _ip: std::net::IpAddr, _domain: &str, from: &str) -> mailin::Response {
         self.envelope_from = from.to_string();
-        mailin::response::OK
+        // Remote end told us about itself, time to tell more about our self.
+        mailin::response::Response::custom(
+            250,
+            format!(
+                "Pleased to meet you!  By the way, this is version {}",
+                VERSION_BE,
+            ),
+        )
     }
 
     fn rcpt(&mut self, to: &str) -> mailin::Response {

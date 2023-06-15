@@ -9,6 +9,7 @@ use axum::{
     routing::get,
     Extension, Json, Router,
 };
+use serde::Serialize;
 use std::{
     convert::Infallible,
     ffi::OsStr,
@@ -22,8 +23,13 @@ use uuid::Uuid;
 
 use crate::{
     types::{Action, MailMessage, MailMessageMetadata},
-    AppState, Asset,
+    AppState, Asset, VERSION_BE,
 };
+
+#[derive(Debug, Serialize)]
+struct VersionInfo {
+    version_be: String,
+}
 
 /// send mail message metadata to websocket clients when broadcaster by the SMTP server
 async fn ws_handler(
@@ -158,6 +164,14 @@ async fn message_body_handler(
     }
 }
 
+/// return version
+async fn version_handler() -> Result<Json<VersionInfo>, StatusCode> {
+    let vi = VersionInfo {
+        version_be: VERSION_BE.to_string(),
+    };
+    Ok(Json(vi))
+}
+
 async fn not_found() -> Response {
     Response::builder()
         .status(StatusCode::NOT_FOUND)
@@ -204,6 +218,7 @@ pub async fn http_server(
         .route("/api/messages", get(messages_handler))
         .route("/api/message/:id", get(message_handler))
         .route("/api/message/:id/body", get(message_body_handler))
+        .route("/api/version", get(version_handler))
         .nest_service("/static", get(static_handler));
 
     if app_state.index.is_some() {

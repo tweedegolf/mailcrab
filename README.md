@@ -30,6 +30,7 @@ Both the backend server and the frontend are written in Rust. The backend receiv
 
 - `/api/messages` return all message metadata
 - `/api/message/[id]` returns a complete message, given its `id`
+- `/api/version` returns version information about the executable
 - `/ws` send email metadata to each connected client when a new email is received
 
 The frontend initially performs a call to `/api/messages` to receive all existing email metadata and then subscribes for new messages using the websocket connection. When opening a message, the `/api/message/[id]` endpoint is used to retrieve the complete message body and raw email.

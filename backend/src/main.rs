@@ -255,14 +255,8 @@ mod test {
         Ok(email)
     }
 
-    async fn test_receive_messages() -> Result<Vec<MailMessageMetadata>, Box<dyn std::error::Error>>
+    async fn get_messages_metadata() -> Result<Vec<MailMessageMetadata>, Box<dyn std::error::Error>>
     {
-        send_message(true, true, false)?;
-        sleep(Duration::from_millis(1500)).await;
-        send_message(true, false, false)?;
-        sleep(Duration::from_millis(1500)).await;
-        send_message(false, true, true)?;
-
         let http_port: u16 = parse_env_var("HTTP_PORT", 1080);
         let mails: Vec<MailMessageMetadata> =
             reqwest::get(format!("http://127.0.0.1:{http_port}/api/messages"))
@@ -273,6 +267,16 @@ mod test {
         Ok(mails)
     }
 
+
+    async fn test_receive_messages() -> Result<(), Box<dyn std::error::Error>>
+    {
+        send_message(true, true, false)?;
+        send_message(true, false, false)?;
+        send_message(false, true, true)?;
+
+        Ok(())
+    }
+
     #[tokio::test]
     async fn receive_message() {
         let mut cmd = Command::new("cargo")
@@ -280,11 +284,20 @@ mod test {
             .stdout(Stdio::inherit())
             .spawn()
             .unwrap();
+
         // wait for mailcrab to startup
-        sleep(Duration::from_millis(20_000)).await;
-        let messages = test_receive_messages().await;
+        for _i in 0..60 {
+            sleep(Duration::from_millis(1_000)).await;
+
+            if get_messages_metadata().await.is_ok() {
+                break;
+            }
+        }
+
+        test_receive_messages().await.unwrap();
+        let messages = get_messages_metadata().await.unwrap();
+
         cmd.kill().unwrap();
-        let messages = messages.unwrap();
 
         assert_eq!(messages.len(), 3);
         assert!(messages[0].has_html);

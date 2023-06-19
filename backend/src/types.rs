@@ -129,10 +129,10 @@ impl From<&mail_parser::Addr<'_>> for Address {
 #[derive(Clone, Debug, Serialize, Default)]
 pub struct MailMessage {
     pub id: MessageId,
+    pub time: i64,
     from: Address,
     to: Vec<Address>,
     subject: String,
-    time: i64,
     date: String,
     size: String,
     opened: bool,

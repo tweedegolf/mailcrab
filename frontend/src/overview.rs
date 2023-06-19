@@ -16,6 +16,7 @@ pub enum Msg {
     Message(Box<MailMessageMetadata>),
     Messages(Vec<MailMessageMetadata>),
     Remove(String),
+    Loading(bool),
     RemoveAll,
 }
 
@@ -32,6 +33,7 @@ pub struct Overview {
     tab: Tab,
     messages: Vec<MailMessageMetadata>,
     sender: Sender<Action>,
+    loading: bool,
 }
 
 impl Component for Overview {
@@ -40,9 +42,11 @@ impl Component for Overview {
 
     fn create(ctx: &Context<Self>) -> Self {
         let link = ctx.link().clone();
+        link.send_message(Msg::Loading(true));
         spawn_local(async move {
             let messages = fetch_messages_metadata().await;
             link.send_message(Msg::Messages(messages));
+            link.send_message(Msg::Loading(false));
         });
 
         let mut wss = WebsocketService::new();
@@ -59,11 +63,15 @@ impl Component for Overview {
             tab: Tab::Formatted,
             selected: Default::default(),
             sender: wss.sender,
+            loading: true,
         }
     }
 
     fn update(&mut self, _ctx: &Context<Self>, msg: Self::Message) -> bool {
         match msg {
+            Msg::Loading(value) => {
+                self.loading = value;
+            }
             Msg::Message(message) => {
                 self.messages.push(*message);
             }
@@ -128,7 +136,11 @@ impl Component for Overview {
             </header>
             if self.messages.is_empty() {
               <div class="empty">
-                {"The inbox is empty 📭"}
+                if self.loading {
+                    <div class="bouncing-loader"><div></div><div></div><div></div></div>
+                } else {
+                    { "The inbox is empty 📭" }
+                }
               </div>
             } else {
               <div class="main">

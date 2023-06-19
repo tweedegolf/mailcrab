@@ -88,6 +88,14 @@ The web interface will also be served at [http://localhost:1080/emails/](http://
 
 See [the reverse proxy guide](./Reverse_proxy.md).
 
+### Retention period
+
+By default messages will be stored in memory until mailcrab is restarted. This might cause an OOM when Mailcrab lives
+long enough and receives enough messages.
+
+By setting `MAILCRAB_RETENTION_PERIOD` to a number of seconds, messages older than the provided duration will
+be cleared.
+
 ### docker compose
 
 Usage in a `docker-compose.yml` file:

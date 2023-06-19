@@ -5,9 +5,11 @@ use std::{
     convert::Infallible,
     env,
     net::IpAddr,
+    ops::Sub,
     process,
     str::FromStr,
     sync::{Arc, RwLock},
+    time::SystemTime,
 };
 use tokio::sync::broadcast::{Receiver, Sender};
 use tokio::time::Duration;
@@ -27,6 +29,7 @@ pub struct AppState {
     storage: RwLock<HashMap<MessageId, MailMessage>>,
     prefix: String,
     index: Option<String>,
+    retention_period: Duration,
 }
 
 #[derive(RustEmbed)]
@@ -63,6 +66,15 @@ async fn storage(
     handle: SubsystemHandle,
 ) -> Result<(), Infallible> {
     let mut running = true;
+    // every retention_period / 10 seconds the messages will be filtered, keeping only messages
+    // that are older than retention_period
+    let min_retention_interval = Duration::from_secs(60);
+    let mut retention_interval =
+        tokio::time::interval(if state.retention_period / 10 < min_retention_interval {
+            min_retention_interval
+        } else {
+            state.retention_period / 10
+        });
 
     while running {
         tokio::select! {
@@ -73,9 +85,22 @@ async fn storage(
                     }
                 }
             },
+            _ = retention_interval.tick() => {
+                if state.retention_period > Duration::from_secs(0) {
+                    if let Ok(mut storage) = state.storage.write() {
+                        let remove_before = std::time::SystemTime::now()
+                            .sub(state.retention_period)
+                            .duration_since(SystemTime::UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs() as i64;
+
+                        storage.retain(|_, mail_message| mail_message.time < remove_before);
+                    }
+                }
+            },
             _ = handle.on_shutdown_requested() => {
                 running = false;
-            }
+            },
         }
     }
 
@@ -129,6 +154,9 @@ async fn main() {
     let prefix = std::env::var("MAILCRAB_PREFIX").unwrap_or_default();
     let prefix = format!("/{}", prefix.trim_matches('/'));
 
+    // optional retention period, the default is 0 - which means messages are kept forever
+    let retention_period: u64 = parse_env_var("MAILCRAB_RETENTION_PERIOD", 0);
+
     event!(
         Level::INFO,
         "MailCrab HTTP server starting on {http_host}:{http_port} and SMTP server on {smtp_host}:{smtp_port}"
@@ -142,6 +170,7 @@ async fn main() {
         storage: Default::default(),
         index: load_index(&prefix),
         prefix,
+        retention_period: Duration::from_secs(retention_period),
     });
 
     // store broadcasted messages in a key/value store

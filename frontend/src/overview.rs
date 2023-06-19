@@ -128,7 +128,7 @@ impl Component for Overview {
             </header>
             if self.messages.is_empty() {
               <div class="empty">
-                {"The inbox is empty 📭"}
+                    { "The inbox is empty 📭" }
               </div>
             } else {
               <div class="main">

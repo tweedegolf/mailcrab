@@ -267,9 +267,7 @@ mod test {
         Ok(mails)
     }
 
-
-    async fn test_receive_messages() -> Result<(), Box<dyn std::error::Error>>
-    {
+    async fn test_receive_messages() -> Result<(), Box<dyn std::error::Error>> {
         send_message(true, true, false)?;
         send_message(true, false, false)?;
         send_message(false, true, true)?;

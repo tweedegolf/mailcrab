@@ -161,7 +161,6 @@ impl MailMessage {
                     let from = format!("cid:{content_id}");
                     let to = format!("data:{};base64,{}", attachement.mime, attachement.content);
 
-                    dbg!(&from, &to);
                     html = html.replace(&from, &to);
                 }
             }

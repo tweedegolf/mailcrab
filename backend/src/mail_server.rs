@@ -57,8 +57,8 @@ impl MailHandler {
 
 impl mailin::Handler for MailHandler {
     fn helo(&mut self, _ip: std::net::IpAddr, _domain: &str) -> mailin::Response {
-        mailin::response::OK
         // NOTE that response is more as just '250 OK'
+        mailin::response::OK
     }
 
     fn mail(&mut self, _ip: std::net::IpAddr, _domain: &str, from: &str) -> mailin::Response {
@@ -66,10 +66,7 @@ impl mailin::Handler for MailHandler {
         // Remote end told us about itself, time to tell more about our self.
         mailin::response::Response::custom(
             250,
-            format!(
-                "Pleased to meet you!  By the way, this is version {}",
-                VERSION_BE,
-            ),
+            format!("Pleased to meet you! This is Mailcrab version {VERSION_BE}",),
         )
     }
 

@@ -24,7 +24,7 @@ mod mail_server;
 mod types;
 mod web_server;
 
-pub const VERSION_BE: &'static str = env!("CARGO_PKG_VERSION");
+pub const VERSION_BE: &str = env!("CARGO_PKG_VERSION");
 // Please note that above line of code will yield an error
 // if the environment variable isn't defined,
 // for example if you execute rustc directly without cargo.

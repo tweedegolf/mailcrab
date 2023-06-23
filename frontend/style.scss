@@ -432,11 +432,13 @@ header {
   align-items: center;
   justify-content: center;
 }
+
 @keyframes bouncing-loader {
   to {
     opacity: 0.1;
   }
 }
+
 .bouncing-loader {
   display: flex;
   justify-content: center;
@@ -445,23 +447,20 @@ header {
   align-items: center;
   margin-top: auto;
 }
+
 .bouncing-loader > div {
   width: 1rem;
   height: 1rem;
   margin: 3rem 0.25rem;
   background: #f74c00;
   border-radius: 50%;
-  -webkit-animation: bouncing-loader 0.6s infinite alternate;
-  -ms-animation: bouncing-loader 0.6s infinite alternate;
   animation: bouncing-loader 0.6s infinite alternate;
 }
+
 .bouncing-loader > div:nth-child(2) {
-  -webkit-animation-delay: 0.2s;
-  -ms-animation-delay: 0.2s;
   animation-delay: 0.2s;
 }
+
 .bouncing-loader > div:nth-child(3) {
-  -webkit-animation-delay: 0.4s;
-  -ms-animation-delay: 0.4s;
   animation-delay: 0.4s;
 }

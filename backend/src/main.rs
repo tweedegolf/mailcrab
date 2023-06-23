@@ -303,7 +303,9 @@ mod test {
 
     async fn test_receive_messages() -> Result<(), Box<dyn std::error::Error>> {
         send_message(true, true, false)?;
+        sleep(Duration::from_millis(1_100)).await;
         send_message(true, false, false)?;
+        sleep(Duration::from_millis(1_100)).await;
         send_message(false, true, true)?;
 
         Ok(())

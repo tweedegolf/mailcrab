@@ -99,7 +99,7 @@ async fn storage(
                             .unwrap()
                             .as_secs() as i64;
 
-                        storage.retain(|_, mail_message| mail_message.time < remove_before);
+                        storage.retain(|_, mail_message| mail_message.time > remove_before);
                     }
                 }
             },

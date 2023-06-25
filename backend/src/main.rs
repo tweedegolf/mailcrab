@@ -349,12 +349,16 @@ mod test {
     #[ignore]
     async fn send_sample_messages() {
         let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
-        let mut paths = std::fs::read_dir("../samples").unwrap();
+        let paths = std::fs::read_dir("../samples").unwrap();
         let mailer = SmtpTransport::builder_dangerous("127.0.0.1".to_string())
             .port(smtp_port)
             .build();
 
-        while let Some(Ok(entry)) = paths.next() {
+        for entry in paths.filter_map(Result::ok).filter_map(|d| {
+            d.path()
+                .to_str()
+                .and_then(|f| if f.ends_with(".email") { Some(d) } else { None })
+        }) {
             let message = std::fs::read_to_string(entry.path()).unwrap();
             let mut lines = message.lines();
 

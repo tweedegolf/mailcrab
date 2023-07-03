@@ -120,7 +120,7 @@ services:
 
 ## Sample messages
 
-The `sample` directory contains a couple of test messages. These can be sent using by running:
+The `samples` directory contains a couple of test messages. These can be sent using by running:
 
 ```sh
 cd backend/

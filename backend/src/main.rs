@@ -222,6 +222,7 @@ mod test {
     use lettre::message::header::ContentType;
     use lettre::message::{Attachment, MultiPart, SinglePart};
     use lettre::{Address, Message, SmtpTransport, Transport};
+    use std::ffi::OsStr;
     use std::process::{Command, Stdio};
     use tokio::time::{sleep, Duration};
 
@@ -355,6 +356,11 @@ mod test {
             .build();
 
         while let Some(Ok(entry)) = paths.next() {
+            // skip non *.email files
+            if entry.path().extension() != Some(OsStr::new("email")) {
+                continue;
+            }
+
             let message = std::fs::read_to_string(entry.path()).unwrap();
             let mut lines = message.lines();
 

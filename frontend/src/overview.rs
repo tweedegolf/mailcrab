@@ -86,7 +86,7 @@ impl Component for Overview {
                     .iter_mut()
                     .find(|m| m.id == self.selected && !m.opened);
 
-                if let Some(mut unopened_message) = unopened {
+                if let Some(unopened_message) = unopened {
                     if self.sender.try_send(Action::Open(id)).is_err() {
                         error!("Error registering email as opened");
                     }

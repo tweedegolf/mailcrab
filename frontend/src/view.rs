@@ -28,15 +28,17 @@ pub fn view(props: &ViewMessageProps) -> Html {
     let id = props.message.id.clone();
     let set_tab = props.set_tab.clone();
     let inner_message = message.clone();
+    let current_tab = props.active_tab.clone();
     use_effect_with_deps(
         |message_id| {
             let message_id = message_id.clone();
             spawn_local(async move {
                 let message = fetch_message(&message_id).await;
-                if message.html.is_empty() {
+                if message.html.is_empty() && current_tab == Tab::Formatted {
                     set_tab.emit(Tab::Text)
-                } else {
-                    set_tab.emit(Tab::Formatted)
+                }
+                if message.text.is_empty() && current_tab == Tab::Text {
+                    set_tab.emit(Tab::Formatted);
                 }
                 inner_message.set(message);
             });

@@ -68,11 +68,24 @@ $border-grey: #eee;
 $light: #f6f6f6;
 $red: #f74c00;
 $light-red: #fffafa;
+$foreground: #333;
+$background: white;
+
+$foreground-dark: #ffffff;
+$light-red-dark: rgb(23, 22, 22);
+$background-dark: rgb(10, 10, 10);
+$surface-dark: rgb(25, 25, 25);
+$border-grey-dark: rgb(75, 75, 75);
 
 html,
 body {
   height: 100%;
   max-height: 100vh;
+  background: $background;
+
+  @media (prefers-color-scheme: dark) {
+    background: $background-dark;
+  }
 }
 
 header {
@@ -82,6 +95,10 @@ header {
   justify-content: space-between;
   align-items: center;
 
+  @media (prefers-color-scheme: dark) {
+    background: $light-red-dark;
+  }
+
   h1 {
     line-height: 4rem;
     padding-left: 6.5rem;
@@ -89,6 +106,11 @@ header {
     background-size: 5rem;
     font-weight: 300;
     font-size: 2.5rem;
+    color: $foreground;
+
+    @media (prefers-color-scheme: dark) {
+      color: $foreground-dark;
+    }
 
     span {
       color: $red;
@@ -108,6 +130,25 @@ header {
     line-height: 2rem;
     background: white url('img/trash.svg') no-repeat top 0.6rem left 0.75rem;
     background-size: 14px;
+    .invert-body {
+      background: white url('img/dark-mode.svg') no-repeat top 0.6rem left
+        0.75rem;
+      padding: 0 1rem;
+      @media (prefers-color-scheme: light) {
+        display: none;
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      background: $surface-dark url('img/trash.svg') no-repeat top 0.6rem left
+        0.75rem;
+      background-size: 14px;
+      color: $foreground-dark;
+      border: 1px solid $border-grey-dark;
+      .invert-body {
+        background: $surface-dark url('img/dark-mode.svg') no-repeat top 0.6rem
+          left 0.75rem;
+      }
+    }
 
     span {
       font-size: 0.8rem;
@@ -140,6 +181,7 @@ header {
     padding: 0 0.75rem 0 3.5rem;
     max-height: 0;
   }
+
   to {
     padding: 0.75rem 0.75rem 0.75rem 3.5rem;
     max-height: 5rem;
@@ -154,6 +196,10 @@ header {
   max-width: 50rem;
   overflow-y: auto;
 
+  @media (prefers-color-scheme: dark) {
+    border-right: 1px solid $border-grey-dark;
+  }
+
   ul {
     display: flex;
     flex-direction: column-reverse;
@@ -162,22 +208,44 @@ header {
   li {
     padding: 0.75rem 0.75rem 0.75rem 3.5rem;
     border-bottom: 1px solid $border-grey;
+
+    @media (prefers-color-scheme: dark) {
+      border-bottom: 1px solid $border-grey-dark;
+    }
+
     line-height: 1.6;
     cursor: pointer;
     transition: all 150ms ease-in;
     animation: slide-down 300ms ease-in;
     overflow: hidden;
     font-size: 0.9rem;
-    background: white url('img/envelope.svg') no-repeat center left 0.75rem;
+    background: $background url('img/envelope.svg') no-repeat center left
+      0.75rem;
     background-size: 2rem;
+    color: $foreground;
+
+    @media (prefers-color-scheme: dark) {
+      background: $surface-dark url('img/envelope.svg') no-repeat center left
+        0.75rem;
+      background-size: 2rem;
+      color: $foreground-dark;
+    }
 
     &:last-child {
       border-top: 1px solid $border-grey;
+
+      @media (prefers-color-scheme: dark) {
+        border-top: 1px solid $border-grey-dark;
+      }
     }
 
     &:hover,
     &.selected {
       background-color: $light-red;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: $light-red-dark;
+      }
     }
 
     &.opened {
@@ -186,9 +254,13 @@ header {
     }
 
     &.selected {
-      color: black !important;
+      color: $foreground !important;
       font-weight: 500;
       background-image: url('img/envelope-open-text.svg');
+
+      @media (prefers-color-scheme: dark) {
+        color: $foreground-dark !important;
+      }
     }
 
     .head {
@@ -203,6 +275,10 @@ header {
         margin-left: 0.5rem;
         color: rgba(black, 0.3);
 
+        @media (prefers-color-scheme: dark) {
+          color: $foreground-dark !important;
+        }
+
         &::before {
           content: '<';
         }
@@ -216,11 +292,19 @@ header {
     .recipients {
       .label {
         color: rgba(black, 0.6);
+
+        @media (prefers-color-scheme: dark) {
+          color: rgba(white, 0.6);
+        }
       }
 
       .email,
       .etc {
         color: rgba(black, 0.3);
+
+        @media (prefers-color-scheme: dark) {
+          color: rgba(white, 1);
+        }
       }
     }
 
@@ -230,12 +314,21 @@ header {
 
       .subject {
         color: rgba(black, 0.9);
+
+        @media (prefers-color-scheme: dark) {
+          color: rgba(white, 0.9);
+        }
+
         display: block;
       }
 
       .size {
         margin-left: 0.5rem;
         color: rgba(black, 0.3);
+
+        @media (prefers-color-scheme: dark) {
+          color: rgba(white, 0.6);
+        }
       }
     }
 
@@ -257,17 +350,29 @@ header {
     content: ', <';
     display: inline-block;
     color: rgba(black, 0.3);
+
+    @media (prefers-color-scheme: dark) {
+      color: $foreground-dark !important;
+    }
   }
 
   .email {
     &::before {
       content: '<';
       color: rgba(black, 0.3);
+
+      @media (prefers-color-scheme: dark) {
+        color: $foreground-dark !important;
+      }
     }
 
     &::after {
       content: '>';
       color: rgba(black, 0.3);
+
+      @media (prefers-color-scheme: dark) {
+        color: $foreground-dark !important;
+      }
     }
   }
 }
@@ -279,16 +384,30 @@ header {
   overflow-x: hidden;
   border-top: 1px solid $border-grey;
 
+  @media (prefers-color-scheme: dark) {
+    background-color: $background-dark;
+    border-top: 1px solid $border-grey-dark;
+  }
+
   .view-inner {
     background-color: white;
     height: 100%;
     display: flex;
     flex-direction: column;
 
+    @media (prefers-color-scheme: dark) {
+      background-color: $surface-dark;
+      color: $foreground-dark;
+    }
+
     ul {
       display: block;
       background-color: $light;
       display: flex;
+
+      @media (prefers-color-scheme: dark) {
+        background-color: $background-dark;
+      }
 
       li {
         button {
@@ -299,10 +418,19 @@ header {
           border: none;
           background-color: darken($light, 5%);
 
+          @media (prefers-color-scheme: dark) {
+            background-color: lighten($background-dark, 5%);
+            color: $foreground-dark;
+          }
+
           &:hover,
           &.active {
             background: white;
             transition: all 150ms ease-in;
+
+            @media (prefers-color-scheme: dark) {
+              background: $surface-dark;
+            }
           }
         }
 
@@ -316,6 +444,14 @@ header {
             background: white url('img/trash.svg') no-repeat center left 1rem;
             background-size: 12px;
             border: 1px solid $grey;
+
+            @media (prefers-color-scheme: dark) {
+              background: $surface-dark url('img/trash.svg') no-repeat center
+                left 1rem;
+              background-size: 12px;
+              color: $foreground-dark;
+              border: 1px solid $border-grey-dark;
+            }
 
             &:hover {
               border: 1px solid $red;
@@ -346,6 +482,10 @@ header {
         th {
           padding: 0.5rem;
           border-bottom: 1px solid lighten($grey, 10%);
+
+          @media (prefers-color-scheme: dark) {
+            border-bottom: 1px solid lighten($background-dark, 25%);
+          }
         }
 
         .name {
@@ -354,6 +494,10 @@ header {
 
         .name + .email {
           color: rgba(black, 0.8);
+
+          @media (prefers-color-scheme: dark) {
+            color: $foreground-dark !important;
+          }
 
           &::before {
             content: ' <';
@@ -378,6 +522,14 @@ header {
           background: white url('img/file.svg') no-repeat center left 0.5rem;
           background-size: 1rem;
 
+          @media (prefers-color-scheme: dark) {
+            background: $surface-dark url('img/file.svg') no-repeat center left
+              0.5rem;
+            background-size: 1rem;
+            color: $foreground-dark;
+            border: 1px solid $border-grey-dark;
+          }
+
           &.application-pdf {
             background-image: url('img/file-pdf.svg');
           }
@@ -390,6 +542,10 @@ header {
 
           &:hover {
             background-color: $light-red;
+
+            @media (prefers-color-scheme: dark) {
+              background-color: $light-red-dark;
+            }
           }
         }
       }
@@ -407,6 +563,7 @@ header {
         flex: 1;
         padding: 0;
         margin-top: 0.75rem;
+        background: white;
 
         pre {
           font-family: Inter, sans-serif;
@@ -422,6 +579,12 @@ header {
         }
       }
     }
+  }
+}
+
+body.body-invert {
+  .body {
+    filter: invert(1);
   }
 }
 

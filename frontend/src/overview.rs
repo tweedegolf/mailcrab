@@ -128,11 +128,19 @@ impl Component for Overview {
           <>
             <header>
               <h1>{"Mail"}<span>{"Crab"}</span></h1>
-              if !self.messages.is_empty() {
-                <button onclick={link.callback(|_| Msg::RemoveAll)}>
-                  {"Remove all"}<span>{"("}{self.messages.len()}{")"}</span>
+              <div>
+                <button class="no-trashcan" onclick={Callback::from(|_| {
+                    let body = web_sys::window().unwrap().document().unwrap().body().unwrap();
+                    body.class_list().toggle("body-invert").unwrap();
+                })}>
+                    {"Invert body"}
                 </button>
-              }
+                if !self.messages.is_empty() {
+                  <button onclick={link.callback(|_| Msg::RemoveAll)}>
+                    {"Remove all"}<span>{"("}{self.messages.len()}{")"}</span>
+                  </button>
+                }
+              </div>
             </header>
             if self.messages.is_empty() {
               <div class="empty">

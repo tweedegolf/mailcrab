@@ -16,6 +16,13 @@ serde-json-wasm = "0.5"
 timeago = "0.4"
 wasm-bindgen = "0.2"
 wasm-bindgen-futures = "0.4"
-web-sys = { version = "0.3", features = ["Event", "EventTarget", "NodeList", "HtmlLinkElement", "HtmlIFrameElement", "CssStyleDeclaration"] }
+web-sys = { version = "0.3", features = [
+  "Event",
+  "EventTarget",
+  "NodeList",
+  "HtmlLinkElement",
+  "HtmlIFrameElement",
+  "CssStyleDeclaration",
+  ] }
 yew = "0.20"
 yew-hooks = "0.2"

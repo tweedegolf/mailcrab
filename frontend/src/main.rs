@@ -1,6 +1,7 @@
 use overview::Overview;
 
 mod api;
+mod dark_mode;
 mod formatted;
 mod list;
 mod message_header;

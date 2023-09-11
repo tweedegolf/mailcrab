@@ -5,6 +5,7 @@ use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
 use crate::api::fetch_messages_metadata;
+use crate::dark_mode::{init_dark_mode, toggle_dark_mode};
 use crate::list::MessageList;
 use crate::types::{Action, MailMessageMetadata};
 use crate::view::ViewMessage;
@@ -56,6 +57,10 @@ impl Component for Overview {
             while let Some(message) = wss.receiver.next().await {
                 link.send_message(Msg::Message(Box::new(message)));
             }
+        });
+
+        spawn_local(async {
+            init_dark_mode();
         });
 
         Self {
@@ -129,17 +134,14 @@ impl Component for Overview {
             <header>
               <h1>{"Mail"}<span>{"Crab"}</span></h1>
               <div>
-                <button class="no-trashcan" onclick={Callback::from(|_| {
-                    let body = web_sys::window().unwrap().document().unwrap().body().unwrap();
-                    body.class_list().toggle("body-invert").unwrap();
-                })}>
-                    {"Invert body"}
-                </button>
                 if !self.messages.is_empty() {
                   <button onclick={link.callback(|_| Msg::RemoveAll)}>
                     {"Remove all"}<span>{"("}{self.messages.len()}{")"}</span>
                   </button>
                 }
+                <button class="dark-mode" title="Toggle dark mode" onclick={Callback::from(|_| {
+                    toggle_dark_mode();
+                })} />
               </div>
             </header>
             if self.messages.is_empty() {

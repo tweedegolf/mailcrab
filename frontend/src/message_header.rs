@@ -1,5 +1,5 @@
-use crate::types::MailMessage;
-use yew::{function_component, html, html_nested, Html, Properties};
+use crate::{dark_mode::toggle_body_invert, types::MailMessage};
+use yew::{function_component, html, html_nested, Callback, Html, Properties};
 
 #[derive(Properties, Eq, PartialEq)]
 pub struct MessageHeaderProps {
@@ -68,7 +68,7 @@ pub fn view(props: &MessageHeaderProps) -> Html {
           </tr>
           </tbody>
         </table>
-        <div class="attachments">
+        <div class="actions">
           {message.attachments.iter().map(|a| {
             html! {
               <a
@@ -81,6 +81,11 @@ pub fn view(props: &MessageHeaderProps) -> Html {
               </a>
             }
           }).collect::<Html>()}
+          <button class="invert-body" onclick={Callback::from(|_| {
+            toggle_body_invert();
+          })}>
+              {"Invert body"}
+          </button>
         </div>
       </>
     }

@@ -158,8 +158,9 @@ impl MailMessage {
 
             for attachement in &self.attachments {
                 if let Some(content_id) = &attachement.content_id {
-                    let from = format!("cid:{content_id}");
-                    let to = format!("data:{};base64,{}", attachement.mime, attachement.content);
+                    let from = format!("cid:{}", content_id.trim_start_matches("cid:"));
+                    let encoded: String = attachement.content.chars().filter(|c| !c.is_whitespace()).collect();
+                    let to = format!("data:{};base64,{}", attachement.mime, encoded);
 
                     html = html.replace(&from, &to);
                 }

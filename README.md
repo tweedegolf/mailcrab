@@ -24,6 +24,10 @@ docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
 
 ![MailCrab screenshot](https://raw.githubusercontent.com/tweedegolf/mailcrab/main/frontend/img/screen.png)
 
+## Related projects
+
+- [CrabAlert](https://github.com/klr/crabalert) is a macOS status bar application that notifies you of incoming messages in MailCrab
+
 ## Technical overview
 
 Both the backend server and the frontend are written in Rust. The backend receives email over an unencrypted connection on a configurable port. All email is stored in memory while the application is running. An API exposes all received email:

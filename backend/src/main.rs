@@ -18,7 +18,10 @@ use tracing::{event, Level};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use types::{MailMessage, MessageId};
 
-use crate::web_server::http_server;
+use crate::{
+    mail_server::{MailServer, TlsMode},
+    web_server::http_server,
+};
 
 mod mail_server;
 mod types;
@@ -119,16 +122,26 @@ async fn mail_server(
     enable_tls_auth: bool,
     handle: SubsystemHandle,
 ) -> Result<(), Infallible> {
-    let task = tokio::task::spawn_blocking(move || {
-        if let Err(e) = mail_server::smtp_listen((smtp_host, smtp_port), tx, enable_tls_auth) {
-            event!(Level::ERROR, "MailCrab mail server error {e}");
-        }
-    });
+    let mut server = MailServer::new(tx).with_address((smtp_host, smtp_port).into());
 
-    tokio::select! {
-        _ = task => {},
-        _ = handle.on_shutdown_requested() => {}
-    };
+    if enable_tls_auth {
+        server = match server
+            .with_authentication()
+            .with_tls(TlsMode::Wrapped)
+            .await
+        {
+            Ok(s) => s,
+            Err(e) => {
+                event!(Level::ERROR, "MailCrab mail server error {e}");
+
+                return Ok(());
+            }
+        }
+    }
+
+    if let Err(e) = server.listen(handle).await {
+        event!(Level::ERROR, "MailCrab mail server error {e}");
+    }
 
     Ok(())
 }

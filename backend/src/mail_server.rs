@@ -1,16 +1,163 @@
-use mailin::AuthMechanism;
-/// Receives email over SMTP, parses and broadcasts messages over an internal queue
-use mailin_embedded::{Server, SslConfig};
-use rcgen::{Certificate, CertificateParams, DistinguishedName, DnType};
-use std::{
-    fs,
-    io::{self},
-    net::ToSocketAddrs,
-};
-use tokio::sync::broadcast::Sender;
+use std::io;
+use std::net::SocketAddr;
+use tokio::{fs, sync::broadcast::Sender};
+use tokio_graceful_shutdown::SubsystemHandle;
 use tracing::{event, Level};
 
 use crate::{types::MailMessage, VERSION_BE};
+
+use mailin::{Action, AuthMechanism, Response, Session, SessionBuilder};
+use rcgen::{Certificate, CertificateParams, DistinguishedName, DnType};
+use rustls::PrivateKey;
+use std::sync::Arc;
+use tokio::io::{AsyncBufReadExt, AsyncRead, AsyncWrite, AsyncWriteExt, BufReader};
+use tokio::net::{TcpListener, TcpStream};
+use tokio::task::JoinHandle;
+use tokio_rustls::{server::TlsStream, TlsAcceptor};
+use tracing::{debug, error};
+
+type Result<T> = std::result::Result<T, String>;
+
+#[derive(Debug, PartialEq)]
+pub enum SessionResult {
+    Finished,
+    UpgradeTls,
+}
+
+async fn write_response<W>(writer: &mut W, res: &Response) -> Result<()>
+where
+    W: AsyncWrite + Unpin,
+{
+    let buf: Vec<u8> = res.buffer().map_err(|e| e.to_string())?;
+
+    debug!("Sending: {}", String::from_utf8_lossy(&buf));
+
+    writer.write_all(&buf).await.map_err(|e| e.to_string())?;
+    writer.flush().await.map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+async fn create_tls_acceptor(name: &str) -> Result<TlsAcceptor> {
+    let mut cert_params = CertificateParams::default();
+    let mut dis_name = DistinguishedName::new();
+    dis_name.push(DnType::CommonName, name);
+    cert_params.distinguished_name = dis_name;
+
+    let cert = Certificate::from_params(cert_params).map_err(|e| e.to_string())?;
+    let cert_pem = cert.serialize_pem().map_err(|e| e.to_string())?;
+
+    fs::write("cert.pem", cert_pem)
+        .await
+        .map_err(|e| e.to_string())?;
+    fs::write("key.pem", cert.serialize_private_key_pem())
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let private_key = PrivateKey(cert.serialize_private_key_der());
+    let certificate = rustls::Certificate(cert.serialize_der().map_err(|e| e.to_string())?);
+
+    let config = rustls::ServerConfig::builder()
+        .with_safe_defaults()
+        .with_no_client_auth()
+        .with_single_cert(vec![certificate], private_key)
+        .map_err(|e| e.to_string())?;
+
+    Ok(TlsAcceptor::from(Arc::new(config)))
+}
+
+async fn handle_steam<S>(
+    mut stream: &mut BufReader<S>,
+    session: &mut Session<MailHandler>,
+) -> Result<SessionResult>
+where
+    S: AsyncWrite + AsyncRead + Unpin,
+{
+    let mut line = Vec::with_capacity(80);
+
+    debug!("Sending 220");
+    write_response(&mut stream, &session.greeting()).await?;
+
+    loop {
+        line.clear();
+        let n = match stream.read_until(b'\n', &mut line).await {
+            Ok(0) => break,
+            Ok(n) => n,
+            Err(e) => return Err(format!("SMTP server error {e}")),
+        };
+
+        debug!("Received: {}", String::from_utf8_lossy(&line[0..n]));
+
+        let response = session.process(&line);
+
+        match response.action {
+            Action::Reply => {
+                write_response(&mut stream, &response).await?;
+            }
+            Action::Close if response.is_error => {
+                write_response(&mut stream, &response).await?;
+
+                return Err(format!("SMT server error code {}", response.code));
+            }
+            Action::Close => {
+                write_response(&mut stream, &response).await?;
+
+                return Ok(SessionResult::Finished);
+            }
+            Action::UpgradeTls => {
+                write_response(&mut stream, &response).await?;
+
+                return Ok(SessionResult::UpgradeTls);
+            }
+            Action::NoReply => {}
+        };
+    }
+
+    debug!("Connection closed");
+
+    Ok(SessionResult::Finished)
+}
+
+async fn upgrade_connection(
+    stream: TcpStream,
+    acceptor: &TlsAcceptor,
+) -> Result<BufReader<TlsStream<TcpStream>>> {
+    let accept_buffer = acceptor.accept(stream).await.map_err(|e| e.to_string())?;
+
+    Ok(BufReader::new(accept_buffer))
+}
+
+async fn handle_connection(
+    socket: TcpStream,
+    session_builder: SessionBuilder,
+    tls: TlsConfig,
+    handler: MailHandler,
+) -> Result<()> {
+    let peer_addr = socket.peer_addr().map_err(|e| e.to_string())?;
+    let mut stream: BufReader<TcpStream> = BufReader::new(socket);
+    let mut session: Session<MailHandler> = session_builder.build(peer_addr.ip(), handler);
+
+    match &tls {
+        TlsConfig::None => {
+            handle_steam(&mut stream, &mut session).await?;
+        }
+        TlsConfig::Wrapped(acceptor) => {
+            let mut stream = upgrade_connection(stream.into_inner(), acceptor).await?;
+            session.tls_active();
+            handle_steam(&mut stream, &mut session).await?;
+        }
+        TlsConfig::StartTls(acceptor) => {
+            let session_result = handle_steam(&mut stream, &mut session).await?;
+            if session_result == SessionResult::UpgradeTls {
+                let mut stream = upgrade_connection(stream.into_inner(), acceptor).await?;
+                session.tls_active();
+                handle_steam(&mut stream, &mut session).await?;
+            }
+        }
+    }
+
+    Ok(())
+}
 
 #[derive(Clone, Debug)]
 struct MailHandler {
@@ -35,7 +182,7 @@ impl MailHandler {
 }
 
 impl MailHandler {
-    fn parse_mail(&mut self) -> Result<MailMessage, &'static str> {
+    fn parse_mail(&mut self) -> Result<MailMessage> {
         // parse the email and convert it to a internal data structure
         let parsed = mail_parser::Message::parse(&self.buffer)
             .ok_or("Could not parse email using mail_parser")?;
@@ -122,75 +269,100 @@ impl mailin::Handler for MailHandler {
     }
 }
 
-pub fn smtp_listen<A: ToSocketAddrs>(
-    addr: A,
-    tx: Sender<MailMessage>,
-    enable_tls_auth: bool,
-) -> Result<(), mailin_embedded::err::Error> {
-    let handler = MailHandler::create(tx);
-    let mut server = Server::new(handler);
+#[allow(dead_code)]
+#[derive(Debug, PartialEq)]
+pub enum TlsMode {
+    None,
+    StartTls,
+    Wrapped,
+}
 
-    let name = env!("CARGO_PKG_NAME");
+#[derive(Clone)]
+pub enum TlsConfig {
+    None,
+    StartTls(TlsAcceptor),
+    Wrapped(TlsAcceptor),
+}
 
-    // Because mailin-embedded AUTH PLAIN only works over TLS,
-    // we need to have a valid SslConfig if auth is enabled.
-    // If auth is enabled but the SMTP server does not offer TLS
-    // it will returns 503 Bad sequence of commands.
-    match enable_tls_auth {
-        true => {
-            // We generate a self-signed cert on startup
-            event!(Level::INFO, "TLS Auth enabled!");
+pub struct MailServer {
+    address: SocketAddr,
+    server_name: &'static str,
+    session_builder: SessionBuilder,
+    tls: TlsConfig,
+    handler: MailHandler,
+}
 
-            // Detect if cert.pem and key.pem already exist
-            // If they do, we don't want to overwrite them
-            let cert_exists = fs::metadata("cert.pem").is_ok();
-            let key_exists = fs::metadata("key.pem").is_ok();
+impl MailServer {
+    pub fn new(tx: Sender<MailMessage>) -> Self {
+        let server_name = env!("CARGO_PKG_NAME");
 
-            if cert_exists && key_exists {
-                event!(
-                    Level::INFO,
-                    "Certificate already exists! Skipping generation..."
-                );
-            } else {
-                let mut cert_params = CertificateParams::default();
-                let mut dis_name = DistinguishedName::new();
-                dis_name.push(DnType::CommonName, name);
-                cert_params.distinguished_name = dis_name;
-
-                event!(Level::INFO, "Generating certificate...");
-                let cert =
-                    Certificate::from_params(cert_params).expect("Cannot generate certificates!");
-                let cert_pem = cert
-                    .serialize_pem()
-                    .expect("Cannot serialize certificate to PEM format!");
-
-                fs::write("cert.pem", &cert_pem).expect("Cannot write out certificate to a file!");
-                fs::write("key.pem", cert.serialize_private_key_pem())
-                    .expect("Cannot write out key to a file!");
-
-                event!(Level::INFO, "Certificate generated:\n{cert_pem}",);
-            }
-
-            let ssl = SslConfig::SelfSigned {
-                cert_path: "cert.pem".to_string(),
-                key_path: "key.pem".to_string(),
-            };
-
-            server
-                .with_name(name)
-                .with_auth(AuthMechanism::Plain)
-                .with_ssl(ssl)?
-                .with_addr(addr)?;
-        }
-        false => {
-            server
-                .with_name(name)
-                .with_ssl(SslConfig::None)?
-                .with_addr(addr)?;
+        Self {
+            address: ([0, 0, 0, 0], 2525).into(),
+            server_name: env!("CARGO_PKG_NAME"),
+            session_builder: SessionBuilder::new(server_name),
+            tls: TlsConfig::None,
+            handler: MailHandler::create(tx),
         }
     }
 
-    server.serve()?;
+    pub fn with_address(mut self, address: SocketAddr) -> Self {
+        self.address = address;
 
-    Ok(())
+        self
+    }
+
+    pub async fn with_tls(mut self, tls_mode: TlsMode) -> Result<Self> {
+        self.tls = match tls_mode {
+            TlsMode::None => TlsConfig::None,
+            TlsMode::StartTls => {
+                self.session_builder.enable_start_tls();
+
+                TlsConfig::StartTls(create_tls_acceptor(self.server_name).await?)
+            }
+            TlsMode::Wrapped => TlsConfig::Wrapped(create_tls_acceptor(self.server_name).await?),
+        };
+
+        Ok(self)
+    }
+
+    pub fn with_authentication(mut self) -> Self {
+        self.session_builder.enable_auth(AuthMechanism::Plain);
+
+        self
+    }
+
+    async fn serve(&self, listener: TcpListener, handle: SubsystemHandle) -> Result<()> {
+        loop {
+            let (socket, peer_addr) = tokio::select! {
+                result = listener.accept() => result.map_err(|e| e.to_string())?,
+                _ = handle.on_shutdown_requested() => return Ok(()),
+            };
+
+            debug!("Connection from {peer_addr:?}");
+
+            tokio::spawn({
+                let session_builder = self.session_builder.clone();
+                let tls = self.tls.clone();
+                let handler = self.handler.clone();
+
+                handle_connection(socket, session_builder, tls, handler)
+            });
+        }
+    }
+
+    pub async fn listen(self, handle: SubsystemHandle) -> Result<JoinHandle<Result<()>>> {
+        let listener = TcpListener::bind(&self.address)
+            .await
+            .map_err(|e| e.to_string())?;
+
+        let join = tokio::task::spawn(async move {
+            if let Err(e) = self.serve(listener, handle).await {
+                error!("SMTP server error {e}");
+            }
+
+            Ok(())
+        });
+
+        Ok(join)
+    }
 }

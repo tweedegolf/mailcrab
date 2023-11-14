@@ -8,7 +8,7 @@ use crate::{
 use wasm_bindgen_futures::spawn_local;
 use web_sys::MouseEvent;
 use yew::{
-    function_component, html, use_effect_with_deps, use_state, Callback, Html, Properties,
+    function_component, html, use_effect_with, use_state, Callback, Html, Properties,
     UseStateHandle,
 };
 
@@ -29,23 +29,20 @@ pub fn view(props: &ViewMessageProps) -> Html {
     let set_tab = props.set_tab.clone();
     let inner_message = message.clone();
     let current_tab = props.active_tab.clone();
-    use_effect_with_deps(
-        |message_id| {
-            let message_id = message_id.clone();
-            spawn_local(async move {
-                let message = fetch_message(&message_id).await;
-                if message.html.is_empty() && current_tab == Tab::Formatted {
-                    set_tab.emit(Tab::Text)
-                }
-                if message.text.is_empty() && current_tab == Tab::Text {
-                    set_tab.emit(Tab::Formatted);
-                }
-                inner_message.set(message);
-            });
-            || ()
-        },
-        id,
-    );
+    use_effect_with(id, |message_id| {
+        let message_id = message_id.clone();
+        spawn_local(async move {
+            let message = fetch_message(&message_id).await;
+            if message.html.is_empty() && current_tab == Tab::Formatted {
+                set_tab.emit(Tab::Text)
+            }
+            if message.text.is_empty() && current_tab == Tab::Text {
+                set_tab.emit(Tab::Formatted);
+            }
+            inner_message.set(message);
+        });
+        || ()
+    });
 
     if message.id.is_empty() {
         return html! {};

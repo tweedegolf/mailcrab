@@ -1,15 +1,16 @@
-use futures::channel::mpsc::Sender;
-use futures::StreamExt;
+use futures::{channel::mpsc::Sender, StreamExt};
 use gloo_console::error;
 use wasm_bindgen_futures::spawn_local;
 use yew::prelude::*;
 
-use crate::api::fetch_messages_metadata;
-use crate::dark_mode::{init_dark_mode, toggle_dark_mode};
-use crate::list::MessageList;
-use crate::types::{Action, MailMessageMetadata};
-use crate::view::ViewMessage;
-use crate::websocket::WebsocketService;
+use crate::{
+    api::fetch_messages_metadata,
+    dark_mode::{init_dark_mode, toggle_dark_mode},
+    list::MessageList,
+    types::{Action, MailMessageMetadata},
+    view::ViewMessage,
+    websocket::WebsocketService,
+};
 
 pub enum Msg {
     Select(String),

@@ -170,6 +170,24 @@ async fn receive_message() {
 
 #[tokio::test]
 #[ignore]
+async fn measure_performance() {
+    let now = std::time::Instant::now();
+    let furures = (0..999).map(|_| {
+        send_message(false, true, false)
+    }).collect::<Vec<_>>();
+
+    let mut i = 0;
+    futures::future::join_all(furures).await.iter().for_each(|e| {
+        i += 1;
+        println!("{i} {:?}", e.as_ref().unwrap().message().next());
+    });
+
+    let later = std::time::Instant::now();
+    println!("Sending 1000 mails took {:?}", later - now);
+}
+
+#[tokio::test]
+#[ignore]
 async fn send_sample_messages() {
     let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
     let mut paths = std::fs::read_dir("../samples").unwrap();

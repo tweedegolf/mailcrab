@@ -14,9 +14,9 @@ use tracing::{error, event, info, Level};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use types::{MailMessage, MessageId};
 
-use crate::{mail_server::mail_server, storage::storage, web_server::http_server};
+use crate::{smtp::mail_server, storage::storage, web_server::http_server};
 
-mod mail_server;
+mod smtp;
 mod storage;
 mod types;
 mod web_server;
@@ -71,6 +71,7 @@ async fn run() -> Result<(), GracefulShutdownError<Box<dyn Error + Send + Sync>>
     let http_host: IpAddr = parse_env_var("HTTP_HOST", [127, 0, 0, 1].into());
     let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
     let http_port: u16 = parse_env_var("HTTP_PORT", 1080);
+    let queue_capacity: usize = parse_env_var("QUEUE_CAPACITY", 32);
 
     // Enable auth implicitly enable TLS
     let enable_tls_auth: bool = std::env::var("ENABLE_TLS_AUTH").map_or_else(
@@ -91,7 +92,7 @@ async fn run() -> Result<(), GracefulShutdownError<Box<dyn Error + Send + Sync>>
     );
 
     // initialize internal broadcast queue
-    let (tx, rx) = tokio::sync::broadcast::channel::<MailMessage>(16);
+    let (tx, rx) = tokio::sync::broadcast::channel::<MailMessage>(queue_capacity);
     let storage_rx = rx.resubscribe();
     let app_state = Arc::new(AppState {
         rx,

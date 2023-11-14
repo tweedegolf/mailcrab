@@ -22,7 +22,10 @@ pub fn init_dark_mode() {
         }
     };
 
-    let body_invert = matches!(local_storage.get_item(BODY_INVERT_KEY).unwrap().as_deref(), Some(INVERT));
+    let body_invert = matches!(
+        local_storage.get_item(BODY_INVERT_KEY).unwrap().as_deref(),
+        Some(INVERT)
+    );
 
     let body = web_sys::window()
         .unwrap()

@@ -820,7 +820,7 @@ dependencies = [
  "once_cell",
  "quoted_printable",
  "rustls",
- "rustls-pemfile",
+ "rustls-pemfile 1.0.4",
  "socket2 0.4.10",
  "tokio",
  "tokio-rustls",
@@ -899,6 +899,7 @@ dependencies = [
  "reqwest",
  "rust-embed",
  "rustls",
+ "rustls-pemfile 2.0.0-alpha.1",
  "serde",
  "serde_json",
  "tokio",
@@ -1510,6 +1511,21 @@ checksum = "1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c"
 dependencies = [
  "base64 0.21.5",
 ]
+
+[[package]]
+name = "rustls-pemfile"
+version = "2.0.0-alpha.1"
+source = "git+https://github.com/rustls/pemfile.git?rev=3aa829c#3aa829c7e8317fac1851357241455642502637d2"
+dependencies = [
+ "base64 0.21.5",
+ "rustls-pki-types",
+]
+
+[[package]]
+name = "rustls-pki-types"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a47003264dea418db67060fa420ad16d0d2f8f0a0360d825c00e177ac52cb5d8"
 
 [[package]]
 name = "rustls-webpki"

@@ -1,37 +1,34 @@
 use rust_embed::{EmbeddedFile, RustEmbed};
-
 use std::{
     collections::HashMap,
-    convert::Infallible,
     env,
+    error::Error,
     net::IpAddr,
-    ops::Sub,
     process,
     str::FromStr,
     sync::{Arc, RwLock},
-    time::SystemTime,
 };
-use tokio::sync::broadcast::{Receiver, Sender};
-use tokio::time::Duration;
-use tokio_graceful_shutdown::{SubsystemHandle, Toplevel};
-use tracing::{event, Level};
+use tokio::{sync::broadcast::Receiver, time::Duration};
+use tokio_graceful_shutdown::{errors::GracefulShutdownError, Toplevel};
+use tracing::{error, event, info, Level};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use types::{MailMessage, MessageId};
 
-use crate::{
-    mail_server::{MailServer, TlsMode},
-    web_server::http_server,
-};
+use crate::{mail_server::mail_server, storage::storage, web_server::http_server};
 
 mod mail_server;
+mod storage;
 mod types;
 mod web_server;
 
-pub const VERSION_BE: &str = env!("CARGO_PKG_VERSION");
-// Please note that above line of code will yield an error
-// if the environment variable isn't defined,
-// for example if you execute rustc directly without cargo.
+#[cfg(test)]
+mod tests;
 
+/// retrieve the version from Cargo.toml, note that this will yield an error
+/// when compiling without cargo
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// application state, holds all messages, a message queue and configuration
 pub struct AppState {
     rx: Receiver<MailMessage>,
     storage: RwLock<HashMap<MessageId, MailMessage>>,
@@ -52,6 +49,7 @@ fn parse_env_var<T: FromStr>(name: &'static str, default: T) -> T {
         .unwrap_or(default)
 }
 
+/// preload the HTML for the index, replace dynamic values
 fn load_index(path_prefix: &str) -> Option<String> {
     let index: EmbeddedFile = Asset::get("index.html")?;
     let index = String::from_utf8(index.data.to_vec()).ok()?;
@@ -68,95 +66,7 @@ fn load_index(path_prefix: &str) -> Option<String> {
     )
 }
 
-async fn storage(
-    mut storage_rx: Receiver<MailMessage>,
-    state: Arc<AppState>,
-    handle: SubsystemHandle,
-) -> Result<(), Infallible> {
-    let mut running = true;
-    // every retention_period / 10 seconds the messages will be filtered, keeping only messages
-    // that are older than retention_period
-    let min_retention_interval = Duration::from_secs(60);
-    let mut retention_interval =
-        tokio::time::interval(if state.retention_period / 10 < min_retention_interval {
-            min_retention_interval
-        } else {
-            state.retention_period / 10
-        });
-
-    while running {
-        tokio::select! {
-            incoming = storage_rx.recv() => {
-                if let Ok(message) = incoming {
-                    if let Ok(mut storage) = state.storage.write() {
-                        storage.insert(message.id, message);
-                    }
-                }
-            },
-            _ = retention_interval.tick() => {
-                if state.retention_period > Duration::from_secs(0) {
-                    if let Ok(mut storage) = state.storage.write() {
-                        let remove_before = std::time::SystemTime::now()
-                            .sub(state.retention_period)
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .unwrap()
-                            .as_secs() as i64;
-
-                        storage.retain(|_, mail_message| mail_message.time > remove_before);
-                    }
-                }
-            },
-            _ = handle.on_shutdown_requested() => {
-                running = false;
-            },
-        }
-    }
-
-    Ok(())
-}
-
-async fn mail_server(
-    smtp_host: IpAddr,
-    smtp_port: u16,
-    tx: Sender<MailMessage>,
-    enable_tls_auth: bool,
-    handle: SubsystemHandle,
-) -> Result<(), Infallible> {
-    let mut server = MailServer::new(tx).with_address((smtp_host, smtp_port).into());
-
-    if enable_tls_auth {
-        server = match server
-            .with_authentication()
-            .with_tls(TlsMode::Wrapped)
-            .await
-        {
-            Ok(s) => s,
-            Err(e) => {
-                event!(Level::ERROR, "MailCrab mail server error {e}");
-
-                return Ok(());
-            }
-        }
-    }
-
-    if let Err(e) = server.listen(handle).await {
-        event!(Level::ERROR, "MailCrab mail server error {e}");
-    }
-
-    Ok(())
-}
-
-#[tokio::main]
-async fn main() {
-    // initialize logging
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::new(
-            std::env::var("RUST_LOG")
-                .unwrap_or_else(|_| "mailcrab_backend=info,tower_http=info".into()),
-        ))
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
+async fn run() -> Result<(), GracefulShutdownError<Box<dyn Error + Send + Sync>>> {
     let smtp_host: IpAddr = parse_env_var("SMTP_HOST", [0, 0, 0, 0].into());
     let http_host: IpAddr = parse_env_var("HTTP_HOST", [127, 0, 0, 1].into());
     let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
@@ -194,7 +104,7 @@ async fn main() {
     // store broadcasted messages in a key/value store
     let state = app_state.clone();
 
-    let result = Toplevel::new()
+    Toplevel::new()
         .start("Storage server", move |h| storage(storage_rx, state, h))
         .start("Mail server", move |h| {
             mail_server(smtp_host, smtp_port, tx, enable_tls_auth, h)
@@ -204,197 +114,34 @@ async fn main() {
         })
         .catch_signals()
         .handle_shutdown_requests(Duration::from_millis(5000))
-        .await;
+        .await
+}
+
+#[tokio::main]
+async fn main() {
+    // initialize logging
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::new(
+            std::env::var("RUST_LOG")
+                .unwrap_or_else(|_| "mailcrab_backend=info,tower_http=info".into()),
+        ))
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
+    let result = run().await;
 
     let exit_code = match result {
         Err(e) => {
-            event!(Level::ERROR, "MailCrab error {e}");
+            error!("MailCrab error {e}");
             // failure
             1
         }
         _ => {
-            event!(Level::INFO, "Thank you for using MailCrab!");
+            info!("Thank you for using MailCrab!");
             // success
             0
         }
     };
 
     process::exit(exit_code);
-}
-
-#[cfg(test)]
-mod test {
-    use crate::parse_env_var;
-    use crate::types::MailMessageMetadata;
-    use fake::faker::company::en::{Buzzword, CatchPhase};
-    use fake::faker::internet::en::SafeEmail;
-    use fake::faker::lorem::en::Paragraph;
-    use fake::faker::name::en::Name;
-    use fake::Fake;
-    use lettre::address::Envelope;
-    use lettre::message::header::ContentType;
-    use lettre::message::{Attachment, MultiPart, SinglePart};
-    use lettre::{Address, Message, SmtpTransport, Transport};
-    use std::ffi::OsStr;
-    use std::process::{Command, Stdio};
-    use tokio::time::{sleep, Duration};
-
-    fn send_message(
-        with_html: bool,
-        with_plain: bool,
-        with_attachment: bool,
-    ) -> Result<Message, Box<dyn std::error::Error>> {
-        let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
-        let mailer = SmtpTransport::builder_dangerous("127.0.0.1".to_string())
-            .port(smtp_port)
-            .build();
-
-        let to: String = SafeEmail().fake();
-        let to_name: String = Name().fake();
-        let from: String = SafeEmail().fake();
-        let from_name: String = Name().fake();
-        let body: String = [
-            Paragraph(2..3).fake::<String>(),
-            Paragraph(2..3).fake::<String>(),
-            Paragraph(2..3).fake::<String>(),
-        ]
-        .join("\n");
-        let html: String = format!(
-            "{}\n<p><a href=\"https://github.com/tweedegolf/mailcrab\">external link</a></p>",
-            body.replace("\n", "<br>\n")
-        );
-
-        let builder = Message::builder()
-            .from(format!("{from_name} <{from}>",).parse()?)
-            .to(format!("{to_name} <{to}>").parse()?)
-            .subject(CatchPhase().fake::<String>());
-
-        let mut multipart = MultiPart::mixed().build();
-
-        match (with_html, with_plain) {
-            (true, true) => {
-                multipart = multipart.multipart(
-                    MultiPart::alternative()
-                        .singlepart(SinglePart::plain(body))
-                        .singlepart(SinglePart::html(html)),
-                );
-            }
-            (false, true) => {
-                multipart = multipart.singlepart(SinglePart::plain(body));
-            }
-            (true, false) => {
-                multipart = multipart.singlepart(SinglePart::html(html));
-            }
-            _ => panic!("Email should have html or plain body"),
-        };
-
-        if with_attachment {
-            let filebody = std::fs::read("blank.pdf")?;
-            let content_type = ContentType::parse("application/pdf")?;
-            let filename = format!("{}.pdf", Buzzword().fake::<&str>().to_ascii_lowercase());
-            let attachment = Attachment::new(filename).body(filebody.clone(), content_type.clone());
-            multipart = multipart.singlepart(attachment);
-        }
-
-        let email = builder.multipart(multipart)?;
-
-        mailer.send(&email)?;
-
-        Ok(email)
-    }
-
-    async fn get_messages_metadata() -> Result<Vec<MailMessageMetadata>, Box<dyn std::error::Error>>
-    {
-        let http_port: u16 = parse_env_var("HTTP_PORT", 1080);
-        let mails: Vec<MailMessageMetadata> =
-            reqwest::get(format!("http://127.0.0.1:{http_port}/api/messages"))
-                .await?
-                .json()
-                .await?;
-
-        Ok(mails)
-    }
-
-    async fn test_receive_messages() -> Result<(), Box<dyn std::error::Error>> {
-        send_message(true, true, false)?;
-        sleep(Duration::from_millis(1_100)).await;
-        send_message(true, false, false)?;
-        sleep(Duration::from_millis(1_100)).await;
-        send_message(false, true, true)?;
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn receive_message() {
-        let mut cmd = Command::new("cargo")
-            .arg("run")
-            .stdout(Stdio::inherit())
-            .spawn()
-            .unwrap();
-
-        // wait for mailcrab to startup
-        for _i in 0..60 {
-            sleep(Duration::from_millis(1_000)).await;
-
-            if get_messages_metadata().await.is_ok() {
-                break;
-            }
-        }
-
-        test_receive_messages().await.unwrap();
-        let messages = get_messages_metadata().await.unwrap();
-
-        cmd.kill().unwrap();
-
-        assert_eq!(messages.len(), 3);
-        assert!(messages[0].has_html);
-        assert!(messages[0].has_plain);
-        assert!(messages[0].attachments.is_empty());
-        assert!(messages[1].has_html);
-        assert!(!messages[1].has_plain);
-        assert!(messages[1].attachments.is_empty());
-        assert!(!messages[2].has_html);
-        assert!(messages[2].has_plain);
-        assert_eq!(messages[2].attachments.len(), 1);
-    }
-
-    #[tokio::test]
-    #[ignore]
-    async fn send_sample_messages() {
-        let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
-        let mut paths = std::fs::read_dir("../samples").unwrap();
-        let mailer = SmtpTransport::builder_dangerous("127.0.0.1".to_string())
-            .port(smtp_port)
-            .build();
-
-        while let Some(Ok(entry)) = paths.next() {
-            // skip non *.email files
-            if entry.path().extension() != Some(OsStr::new("email")) {
-                continue;
-            }
-
-            let message = std::fs::read_to_string(entry.path()).unwrap();
-            let mut lines = message.lines();
-
-            let sender = lines
-                .next()
-                .unwrap()
-                .trim_start_matches("Sender: ")
-                .parse::<Address>()
-                .unwrap();
-            let recipients = lines
-                .next()
-                .unwrap()
-                .trim_start_matches("Recipients: ")
-                .split(',')
-                .map(|r| r.trim().parse::<Address>().unwrap())
-                .collect::<Vec<Address>>();
-            let envelope = Envelope::new(Some(sender), recipients).unwrap();
-
-            let email = lines.collect::<Vec<&str>>().join("\n");
-
-            mailer.send_raw(&envelope, email.as_bytes()).unwrap();
-        }
-    }
 }

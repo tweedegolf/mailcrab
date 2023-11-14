@@ -18,12 +18,12 @@ use std::{
 };
 use tokio_graceful_shutdown::SubsystemHandle;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
-use tracing::{event, Level};
+use tracing::{error, event, info, Level};
 use uuid::Uuid;
 
 use crate::{
     types::{Action, MailMessage, MailMessageMetadata},
-    AppState, Asset, VERSION_BE,
+    AppState, Asset, VERSION,
 };
 
 #[derive(Debug, Serialize)]
@@ -45,7 +45,7 @@ async fn ws_handler(
             tokio::select! {
                 _ = ping_interval.tick() => {
                     if socket.send(ws::Message::Ping(vec![])).await.is_err() {
-                        event!(Level::INFO, "WS client disconnected");
+                        info!("WS client disconnected");
                         active = false;
                     }
                 },
@@ -56,17 +56,17 @@ async fn ws_handler(
                             match serde_json::to_string(&metadata) {
                                 Ok(json) => {
                                     if socket.send(ws::Message::Text(json)).await.is_err() {
-                                        event!(Level::INFO, "WS client disconnected");
+                                        info!("WS client disconnected");
                                         active = false;
                                     }
                                 },
                                 Err(e) => {
-                                    event!(Level::ERROR, "could not convert message to json {:?}", e);
+                                    error!("could not convert message to json {:?}", e);
                                 }
                             }
                         },
                         Err(e) => {
-                            event!(Level::ERROR, "event pipeline error {:?}", e);
+                            error!("event pipeline error {:?}", e);
                             active = false;
                         }
                     }
@@ -77,17 +77,17 @@ async fn ws_handler(
                             match serde_json::from_str(action.as_str()) {
                                 Ok(Action::RemoveAll) => if let Ok(mut storage) = state.storage.write() {
                                     storage.clear();
-                                    event!(Level::INFO, "storage cleared");
+                                    info!("storage cleared");
                                 },
                                 Ok(Action::Open(id)) => if let Ok(mut storage) = state.storage.write() {
                                     if let Some(message) = storage.get_mut(&id) {
                                         message.open();
-                                        event!(Level::INFO, "message {} opened", &id);
+                                        info!("message {} opened", &id);
                                     }
                                 },
                                 Ok(Action::Remove(id)) => if let Ok(mut storage) = state.storage.write() {
                                     if storage.remove(&id).is_some() {
-                                        event!(Level::INFO, "message {} removed", &id);
+                                        info!("message {} removed", &id);
                                     }
                                 },
                                 msg => {
@@ -99,7 +99,7 @@ async fn ws_handler(
                             // pass
                         },
                         Some(Ok(ws::Message::Close(_))) | None => {
-                            event!(Level::INFO, "websocket closed");
+                            info!("websocket closed");
                             active = false;
                         },
                         Some(Err(e)) => {
@@ -107,7 +107,7 @@ async fn ws_handler(
                             active = false;
                         },
                         Some(Ok(other_message)) => {
-                            event!(Level::INFO, "received unexpected message {:?}", other_message);
+                            info!("received unexpected message {:?}", other_message);
                         },
                     }
                 }
@@ -167,8 +167,9 @@ async fn message_body_handler(
 /// return version
 async fn version_handler() -> Result<Json<VersionInfo>, StatusCode> {
     let vi = VersionInfo {
-        version_be: VERSION_BE.to_string(),
+        version_be: VERSION.to_string(),
     };
+
     Ok(Json(vi))
 }
 
@@ -245,7 +246,7 @@ pub async fn http_server(
         .with_graceful_shutdown(subsys.on_shutdown_requested())
         .await
     {
-        event!(Level::ERROR, "MailCrab web server error {e}");
+        error!("MailCrab web server error {e}");
     }
 
     Ok(())

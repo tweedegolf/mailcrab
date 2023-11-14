@@ -19,6 +19,7 @@ docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
 - Accept-all SMTP server
 - Web interface to view and inspect all incoming email
 - View formatted mail, download attachments, view headers or the complete raw mail contents
+- Single binary
 - Runs on all `amd64` and `arm64` platforms using docker
 - Just a 7.77 MB docker image
 
@@ -43,13 +44,15 @@ The backend also accepts a few commands over the websocket, to mark a message as
 
 ## Installation and usage
 
-To run MailCrab only docker is required. Start MailCrab using the following command:
+You can run MailCrab using docker. Start MailCrab using the following command:
 
 ```sh
 docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
 ```
 
 Open a browser and navigate to [http://localhost:1080](http://localhost:1080) to view the web interface.
+
+There are also (single) binary builds available, see https://github.com/tweedegolf/mailcrab/releases
 
 ### Ports
 
@@ -61,9 +64,9 @@ docker run --rm -p 3000:1080 -p 2525:1025 marlonb/mailcrab:latest
   
 ## Host
 
-You can specify the host address Mailcrab will listen on for HTTP request using
+You can specify the host address MailCrab will listen on for HTTP request using
 the `HTTP_HOST` environment variable. In the docker image the default
-address is `0.0.0.0`, when running Mailcrab directly using cargo or a binary, the default is `127.0.0.1`.
+address is `0.0.0.0`, when running MailCrab directly using cargo or a binary, the default is `127.0.0.1`.
 
 ### TLS
 
@@ -95,11 +98,20 @@ See [the reverse proxy guide](./Reverse_proxy.md).
 
 ### Retention period
 
-By default messages will be stored in memory until mailcrab is restarted. This might cause an OOM when Mailcrab lives
+By default messages will be stored in memory until MailCrab is restarted. This might cause an OOM when MailCrab lives
 long enough and receives enough messages.
 
 By setting `MAILCRAB_RETENTION_PERIOD` to a number of seconds, messages older than the provided duration will
 be cleared.
+
+### Performance
+
+MailCrab is fast, although there is a bottleneck in the throughput of the websocket connection
+(between the server and the browser). If there are many messages sent at once (more than 100 per second)
+a client can lag behind and messages can get lost. When dealing with many messages at once,
+increasing the internal queue size can help to prevent losing messages.
+Use the `QUEUE_CAPACITY` environment variable to set the queue size. De default
+is 32, which means that MailCrab can handle 32 messages if the are all sent at the same time.
 
 ### docker compose
 

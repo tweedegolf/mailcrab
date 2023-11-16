@@ -11,17 +11,17 @@ use axum::{
 };
 use serde::Serialize;
 use std::{
-    convert::Infallible,
     ffi::OsStr,
     net::{IpAddr, SocketAddr},
     sync::Arc,
 };
 use tokio_graceful_shutdown::SubsystemHandle;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
-use tracing::{error, event, info, Level};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::{
+    error::Error,
     types::{Action, MailMessage, MailMessageMetadata},
     AppState, Asset, VERSION,
 };
@@ -91,7 +91,7 @@ async fn ws_handler(
                                     }
                                 },
                                 msg => {
-                                    event!(Level::WARN, "unknown action {:?}", msg);
+                                    warn!("unknown action {:?}", msg);
                                 },
                             }
                         },
@@ -103,7 +103,7 @@ async fn ws_handler(
                             active = false;
                         },
                         Some(Err(e)) => {
-                            event!(Level::WARN, "websocket error {:?}", e);
+                            warn!("websocket error {:?}", e);
                             active = false;
                         },
                         Some(Ok(other_message)) => {
@@ -213,7 +213,7 @@ pub async fn http_server(
     port: u16,
     app_state: Arc<AppState>,
     subsys: SubsystemHandle,
-) -> Result<(), Infallible> {
+) -> Result<(), Error> {
     let mut router = Router::new()
         .route("/ws", get(ws_handler))
         .route("/api/messages", get(messages_handler))
@@ -241,13 +241,9 @@ pub async fn http_server(
 
     let addr = SocketAddr::from((host, port));
 
-    if let Err(e) = axum::Server::bind(&addr)
+    axum::Server::bind(&addr)
         .serve(app.into_make_service())
         .with_graceful_shutdown(subsys.on_shutdown_requested())
         .await
-    {
-        error!("MailCrab web server error {e}");
-    }
-
-    Ok(())
+        .map_err(|e| Error::WebServer(e.to_string()))
 }

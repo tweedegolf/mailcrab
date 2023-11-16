@@ -1,8 +1,8 @@
-use std::{convert::Infallible, ops::Sub, sync::Arc, time::SystemTime};
+use std::{ops::Sub, sync::Arc, time::SystemTime};
 use tokio::{sync::broadcast::Receiver, time::Duration};
 use tokio_graceful_shutdown::SubsystemHandle;
 
-use crate::{types::MailMessage, AppState};
+use crate::{error::Result, types::MailMessage, AppState};
 
 /// storage task, stores all messages from the queue and optionally
 /// deletes old messages
@@ -10,7 +10,7 @@ pub(crate) async fn storage(
     mut storage_rx: Receiver<MailMessage>,
     state: Arc<AppState>,
     handle: SubsystemHandle,
-) -> Result<(), Infallible> {
+) -> Result<()> {
     let mut running = true;
     // every retention_period / 10 seconds the messages will be filtered, keeping only messages
     // that are older than retention_period
@@ -36,8 +36,7 @@ pub(crate) async fn storage(
                     if let Ok(mut storage) = state.storage.write() {
                         let remove_before = std::time::SystemTime::now()
                             .sub(state.retention_period)
-                            .duration_since(SystemTime::UNIX_EPOCH)
-                            .unwrap()
+                            .duration_since(SystemTime::UNIX_EPOCH)?
                             .as_secs() as i64;
 
                         storage.retain(|_, mail_message| mail_message.time > remove_before);

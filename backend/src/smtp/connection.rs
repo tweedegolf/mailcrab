@@ -6,7 +6,9 @@ use tokio::{
 use tokio_rustls::{server::TlsStream, TlsAcceptor};
 use tracing::debug;
 
-use super::{handler::MailHandler, server::TlsConfig, Result};
+use crate::error::{Error, Result};
+
+use super::{handler::MailHandler, server::TlsConfig};
 
 #[derive(Debug, PartialEq)]
 enum SessionResult {
@@ -19,12 +21,12 @@ async fn write_response<W>(writer: &mut W, res: &Response) -> Result<()>
 where
     W: AsyncWrite + Unpin,
 {
-    let buf: Vec<u8> = res.buffer().map_err(|e| e.to_string())?;
+    let buf: Vec<u8> = res.buffer()?;
 
     debug!("Sending: {}", String::from_utf8_lossy(&buf));
 
-    writer.write_all(&buf).await.map_err(|e| e.to_string())?;
-    writer.flush().await.map_err(|e| e.to_string())?;
+    writer.write_all(&buf).await?;
+    writer.flush().await?;
 
     Ok(())
 }
@@ -42,10 +44,9 @@ where
 
     loop {
         line.clear();
-        let n = match stream.read_until(b'\n', &mut line).await {
-            Ok(0) => break,
-            Ok(n) => n,
-            Err(e) => return Err(format!("SMTP server error {e}")),
+        let n = match stream.read_until(b'\n', &mut line).await? {
+            0 => break,
+            n => n,
         };
 
         debug!("Received: {}", String::from_utf8_lossy(&line[0..n]));
@@ -59,7 +60,7 @@ where
             Action::Close if response.is_error => {
                 write_response(&mut stream, &response).await?;
 
-                return Err(format!("SMT server error code {}", response.code));
+                return Err(Error::Smtp(format!("code {}", response.code)));
             }
             Action::Close => {
                 write_response(&mut stream, &response).await?;
@@ -85,7 +86,7 @@ async fn upgrade_connection(
     stream: TcpStream,
     acceptor: &TlsAcceptor,
 ) -> Result<BufReader<TlsStream<TcpStream>>> {
-    let accept_buffer = acceptor.accept(stream).await.map_err(|e| e.to_string())?;
+    let accept_buffer = acceptor.accept(stream).await?;
 
     Ok(BufReader::new(accept_buffer))
 }
@@ -97,7 +98,7 @@ pub(super) async fn handle_connection(
     tls: TlsConfig,
     handler: MailHandler,
 ) -> Result<()> {
-    let peer_addr = socket.peer_addr().map_err(|e| e.to_string())?;
+    let peer_addr = socket.peer_addr()?;
     let mut stream: BufReader<TcpStream> = BufReader::new(socket);
     let mut session: Session<MailHandler> = session_builder.build(peer_addr.ip(), handler);
 

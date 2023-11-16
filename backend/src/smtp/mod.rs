@@ -3,7 +3,7 @@ use tokio::sync::broadcast::Sender;
 use tokio_graceful_shutdown::SubsystemHandle;
 use tracing::error;
 
-use crate::types::MailMessage;
+use crate::{error::Result, types::MailMessage};
 
 use self::server::{MailServer, TlsMode};
 
@@ -12,9 +12,7 @@ mod handler;
 mod server;
 mod tls;
 
-pub(super) type Result<T> = std::result::Result<T, String>;
-
-pub async fn mail_server(
+pub(crate) async fn mail_server(
     smtp_host: IpAddr,
     smtp_port: u16,
     tx: Sender<MailMessage>,

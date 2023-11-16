@@ -5,9 +5,9 @@ use tokio_graceful_shutdown::SubsystemHandle;
 use tokio_rustls::TlsAcceptor;
 use tracing::{debug, error, info};
 
-use crate::{smtp::connection::handle_connection, types::MailMessage};
+use crate::{error::Result, smtp::connection::handle_connection, types::MailMessage};
 
-use super::{handler::MailHandler, tls::create_tls_acceptor, Result};
+use super::{handler::MailHandler, tls::create_tls_acceptor};
 
 #[allow(dead_code)]
 #[derive(Debug, PartialEq)]
@@ -72,13 +72,11 @@ impl MailServer {
     }
 
     pub(super) async fn listen(self, handle: SubsystemHandle) -> Result<JoinHandle<Result<()>>> {
-        let listener = TcpListener::bind(&self.address)
-            .await
-            .map_err(|e| e.to_string())?;
+        let listener = TcpListener::bind(&self.address).await?;
 
         let join = tokio::task::spawn(async move {
             if let Err(e) = self.serve(listener, handle).await {
-                error!("SMTP server error {e}");
+                error!("MailCrab mail server error {e}");
             }
 
             Ok(())
@@ -92,7 +90,7 @@ impl MailServer {
 
         loop {
             let (socket, peer_addr) = tokio::select! {
-                result = listener.accept() => result.map_err(|e| e.to_string())?,
+                result = listener.accept() => result?,
                 _ = handle.on_shutdown_requested() => {
                     info!("Shutting down mail server");
                     return Ok(());

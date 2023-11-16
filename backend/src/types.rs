@@ -2,8 +2,10 @@ use chrono::{DateTime, Local};
 use mail_parser::MimeHeaders;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tracing::{event, Level};
+use tracing::warn;
 use uuid::Uuid;
+
+use crate::error::Error;
 
 pub type MessageId = Uuid;
 
@@ -176,16 +178,13 @@ impl MailMessage {
 }
 
 impl TryFrom<mail_parser::Message<'_>> for MailMessage {
-    type Error = &'static str;
+    type Error = Error;
 
     fn try_from(message: mail_parser::Message) -> Result<Self, Self::Error> {
-        let from = match message.from() {
-            mail_parser::HeaderValue::Address(addr) => addr.into(),
+        let from = match message.from().and_then(|f| f.first()) {
+            Some(addr) => addr.into(),
             _ => {
-                event!(
-                    Level::WARN,
-                    "Could not parse 'From' address header, setting placeholder address."
-                );
+                warn!("Could not parse 'From' address header, setting placeholder address.");
 
                 Address {
                     name: Some("No from header".to_string()),
@@ -194,17 +193,13 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
             }
         };
 
-        let to = match message.to() {
-            mail_parser::HeaderValue::Address(addr) => vec![addr.into()],
-            mail_parser::HeaderValue::AddressList(list) => list
+        let to = match message.to().and_then(|a| a.as_list()) {
+            Some(list) => list
                 .iter()
                 .map(|addr| addr.into())
                 .collect::<Vec<Address>>(),
             _ => {
-                event!(
-                    Level::WARN,
-                    "Could not parse 'To' address header, setting placeholder address."
-                );
+                warn!("Could not parse 'To' address header, setting placeholder address.");
 
                 vec![Address {
                     name: Some("No to header".to_string()),

@@ -1,14 +1,20 @@
+use mail_parser::MessageParser;
 use tokio::sync::broadcast::Sender;
-use tracing::{info, warn};
+use tracing::{error, info};
 
-use crate::{types::MailMessage, VERSION};
-
-use super::Result;
+use crate::{
+    error::{Error, Result},
+    types::MailMessage,
+    VERSION,
+};
 
 #[derive(Clone, Debug)]
 pub(super) struct MailHandler {
     // internal broadcast queue
     tx: Sender<MailMessage>,
+
+    // parser
+    parser: MessageParser,
 
     // incoming message buffer
     buffer: Vec<u8>,
@@ -20,6 +26,7 @@ impl MailHandler {
     pub(super) fn create(tx: Sender<MailMessage>) -> Self {
         MailHandler {
             tx,
+            parser: MessageParser::new(),
             buffer: Vec::new(),
             envelope_from: String::new(),
             envelope_recipients: Vec::new(),
@@ -30,8 +37,11 @@ impl MailHandler {
 impl MailHandler {
     fn parse_mail(&mut self) -> Result<MailMessage> {
         // parse the email and convert it to a internal data structure
-        let parsed = mail_parser::Message::parse(&self.buffer)
-            .ok_or("Could not parse email using mail_parser")?;
+        let parsed = self
+            .parser
+            .parse(&self.buffer)
+            .ok_or_else(|| Error::Smtp("failed to parse message".to_owned()))?;
+
         let mut message: MailMessage = parsed.try_into()?;
         message.envelope_from = std::mem::take(&mut self.envelope_from);
         message.envelope_recipients = std::mem::take(&mut self.envelope_recipients);
@@ -42,7 +52,7 @@ impl MailHandler {
         // send the message to a internal queue
         self.tx
             .send(message.clone())
-            .map_err(|_| "Could not send email to own broadcast channel")?;
+            .map_err(|e| Error::Smtp(e.to_string()))?;
 
         Ok(message)
     }
@@ -78,7 +88,7 @@ impl mailin::Handler for MailHandler {
         _is8bit: bool,
         to: &[String],
     ) -> mailin::Response {
-        info!("Incoming message on {} from {} to {:?}", domain, from, to);
+        info!("Incoming message on {domain} from {from} to {to:?}");
 
         mailin::response::OK
     }
@@ -91,7 +101,7 @@ impl mailin::Handler for MailHandler {
     fn data_end(&mut self) -> mailin::Response {
         match self.parse_mail() {
             Err(e) => {
-                warn!("Error parsing email: {}", e);
+                error!("{e}");
 
                 mailin::response::Response::custom(500, "Error parsing message".to_string())
             }

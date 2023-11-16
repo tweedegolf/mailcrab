@@ -2,20 +2,25 @@ use rust_embed::{EmbeddedFile, RustEmbed};
 use std::{
     collections::HashMap,
     env,
-    error::Error,
     net::IpAddr,
     process,
     str::FromStr,
     sync::{Arc, RwLock},
 };
 use tokio::{sync::broadcast::Receiver, time::Duration};
-use tokio_graceful_shutdown::{errors::GracefulShutdownError, Toplevel};
-use tracing::{error, event, info, Level};
+use tokio_graceful_shutdown::Toplevel;
+use tracing::{error, info};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use types::{MailMessage, MessageId};
 
-use crate::{smtp::mail_server, storage::storage, web_server::http_server};
+use crate::{
+    error::{Error, Result},
+    smtp::mail_server,
+    storage::storage,
+    web_server::http_server,
+};
 
+mod error;
 mod smtp;
 mod storage;
 mod types;
@@ -50,23 +55,22 @@ fn parse_env_var<T: FromStr>(name: &'static str, default: T) -> T {
 }
 
 /// preload the HTML for the index, replace dynamic values
-fn load_index(path_prefix: &str) -> Option<String> {
-    let index: EmbeddedFile = Asset::get("index.html")?;
-    let index = String::from_utf8(index.data.to_vec()).ok()?;
+fn load_index(path_prefix: &str) -> Result<String> {
+    let index: EmbeddedFile = Asset::get("index.html")
+        .ok_or_else(|| Error::WebServer("Could not load index.html".to_owned()))?;
+    let index = String::from_utf8_lossy(&index.data);
     let path_prefix = if path_prefix == "/" { "" } else { path_prefix };
 
     // add path prefix to asset includes
-    Some(
-        index
-            .replace("href=\"/", &format!("href=\"{path_prefix}/static/"))
-            .replace(
-                "'/mailcrab-frontend",
-                &format!("'{path_prefix}/static/mailcrab-frontend"),
-            ),
-    )
+    Ok(index
+        .replace("href=\"/", &format!("href=\"{path_prefix}/static/"))
+        .replace(
+            "'/mailcrab-frontend",
+            &format!("'{path_prefix}/static/mailcrab-frontend"),
+        ))
 }
 
-async fn run() -> Result<(), GracefulShutdownError<Box<dyn Error + Send + Sync>>> {
+async fn run() -> i32 {
     let smtp_host: IpAddr = parse_env_var("SMTP_HOST", [0, 0, 0, 0].into());
     let http_host: IpAddr = parse_env_var("HTTP_HOST", [127, 0, 0, 1].into());
     let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
@@ -86,8 +90,7 @@ async fn run() -> Result<(), GracefulShutdownError<Box<dyn Error + Send + Sync>>
     // optional retention period, the default is 0 - which means messages are kept forever
     let retention_period: u64 = parse_env_var("MAILCRAB_RETENTION_PERIOD", 0);
 
-    event!(
-        Level::INFO,
+    info!(
         "MailCrab HTTP server starting on {http_host}:{http_port} and SMTP server on {smtp_host}:{smtp_port}"
     );
 
@@ -97,7 +100,7 @@ async fn run() -> Result<(), GracefulShutdownError<Box<dyn Error + Send + Sync>>
     let app_state = Arc::new(AppState {
         rx,
         storage: Default::default(),
-        index: load_index(&prefix),
+        index: load_index(&prefix).ok(),
         prefix,
         retention_period: Duration::from_secs(retention_period),
     });
@@ -105,7 +108,7 @@ async fn run() -> Result<(), GracefulShutdownError<Box<dyn Error + Send + Sync>>
     // store broadcasted messages in a key/value store
     let state = app_state.clone();
 
-    Toplevel::new()
+    match Toplevel::new()
         .start("Storage server", move |h| storage(storage_rx, state, h))
         .start("Mail server", move |h| {
             mail_server(smtp_host, smtp_port, tx, enable_tls_auth, h)
@@ -116,6 +119,14 @@ async fn run() -> Result<(), GracefulShutdownError<Box<dyn Error + Send + Sync>>
         .catch_signals()
         .handle_shutdown_requests(Duration::from_millis(5000))
         .await
+    {
+        Ok(_) => 0,
+        Err(e) => {
+            error!("MailCrab error {e}");
+
+            1
+        }
+    }
 }
 
 #[tokio::main]
@@ -129,20 +140,7 @@ async fn main() {
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let result = run().await;
-
-    let exit_code = match result {
-        Err(e) => {
-            error!("MailCrab error {e}");
-            // failure
-            1
-        }
-        _ => {
-            info!("Thank you for using MailCrab!");
-            // success
-            0
-        }
-    };
+    let exit_code = run().await;
 
     process::exit(exit_code);
 }

@@ -1,3 +1,4 @@
+use base64ct::Encoding;
 use chrono::{DateTime, Local};
 use mail_parser::MimeHeaders;
 use serde::{Deserialize, Serialize};
@@ -108,7 +109,7 @@ impl From<&mail_parser::MessagePart<'_>> for Attachment {
             mime,
             content_id: part.content_id().map(|s| s.to_owned()),
             size: humansize::format_size(part.contents().len(), humansize::DECIMAL),
-            content: base64::encode(part.contents()),
+            content: base64ct::Base64::encode_string(part.contents()),
         }
     }
 }
@@ -236,7 +237,7 @@ impl TryFrom<mail_parser::Message<'_>> for MailMessage {
             None => Local::now(),
         };
 
-        let raw = base64::encode(&message.raw_message);
+        let raw = base64ct::Base64::encode_string(&message.raw_message);
 
         let mut headers = HashMap::<String, String>::new();
 

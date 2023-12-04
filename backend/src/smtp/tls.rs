@@ -1,8 +1,7 @@
 use rcgen::{Certificate, CertificateParams, DistinguishedName, DnType};
-use rustls::PrivateKey;
 use std::{io::BufReader, sync::Arc};
 use tokio::fs;
-use tokio_rustls::TlsAcceptor;
+use tokio_rustls::{rustls, TlsAcceptor};
 use tracing::info;
 
 use crate::error::Result;
@@ -51,7 +50,7 @@ pub(super) async fn create_tls_acceptor(name: &str) -> Result<TlsAcceptor> {
             fs::write(KEY_PATH, full_cert.serialize_private_key_pem()).await?;
 
             let cert: rustls::Certificate = rustls::Certificate(full_cert.serialize_der()?);
-            let key = PrivateKey(full_cert.serialize_private_key_der());
+            let key = rustls::PrivateKey(full_cert.serialize_private_key_der());
 
             (vec![cert], key)
         }

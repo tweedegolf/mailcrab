@@ -5,7 +5,7 @@ pub enum Error {
     #[error("{0}")]
     AsyncIo(#[from] tokio::io::Error),
     #[error("{0}")]
-    Tls(#[from] rustls::Error),
+    Tls(#[from] tokio_rustls::rustls::Error),
     #[error("error creating a self-signed key pair {0}")]
     SelfSigned(#[from] rcgen::RcgenError),
     #[error("{0}")]

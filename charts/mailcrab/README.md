@@ -1,8 +1,8 @@
 # mailcrab
 
-![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 1.16.0](https://img.shields.io/badge/AppVersion-1.16.0-informational?style=flat-square)
+![Version: 0.1.0](https://img.shields.io/badge/Version-0.1.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: 0.23.0](https://img.shields.io/badge/AppVersion-0.23.0-informational?style=flat-square)
 
-A Helm chart for Kubernetes
+A Helm chart for deploying MailCrab in Kubernetes.
 
 ## Values
 
@@ -16,7 +16,9 @@ A Helm chart for Kubernetes
 | ingress.annotations | object | `{}` | Annotations to add to the ingress |
 | ingress.className | string | `""` | The class of the Ingress controller to use, default to nginx (nginx, traefik, haproxy) |
 | ingress.enabled | bool | `false` | Enables the use of an ingress controller. |
-| ingress.hosts | list | `[{"host":"chart-example.local","paths":[{"path":"/","pathType":"ImplementationSpecific"}]}]` | Hostnames. |
+| ingress.hosts[0].host | string | `"chart-example.local"` | The host to use for the ingress. |
+| ingress.hosts[0].paths[0].path | string | `"/"` | The path to use for the ingress. |
+| ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
 | ingress.tls | list | `[]` | TLS configuration for ingress |
 | nameOverride | string | `""` | Configure the name override for resources. |
 | podAnnotations | object | `{}` | Configure annotations to be required by the pods to run the application. |

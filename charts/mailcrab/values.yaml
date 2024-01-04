@@ -22,7 +22,6 @@ nameOverride: ""
 # -- Configure the fullname override for resources.
 fullnameOverride: ""
 
-# -- Configure the name of the service account to use.
 serviceAccount:
   # -- Specifies whether a service account should be created
   create: true
@@ -47,7 +46,6 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
-# -- Configure the service to be used in the application.
 service:
   # -- The type of service to create.
   type: ClusterIP
@@ -58,7 +56,6 @@ service:
   # -- The container port to expose on the service for the SMTP server.
   smtpPort: 1025
 
-# -- Configure the ingress to be used in the application.
 ingress:
   # -- Enables the use of an ingress controller.
   enabled: false

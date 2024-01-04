@@ -13,7 +13,6 @@ A Helm chart for Kubernetes
 | image.repository | string | `"marlonb/mailcrab"` | Image to use for the deployment. |
 | image.tag | string | `"latest"` | Overrides the image tag whose default is the chart appVersion. |
 | imagePullSecrets | list | `[]` | If needed, specity a custom imagePullSecrets to use with priavet registries. |
-| ingress | object | `{"annotations":{},"className":"","enabled":false,"hosts":[{"host":"chart-example.local","paths":[{"path":"/","pathType":"ImplementationSpecific"}]}],"tls":[]}` | Configure the ingress to be used in the application. |
 | ingress.annotations | object | `{}` | Annotations to add to the ingress |
 | ingress.className | string | `""` | The class of the Ingress controller to use, default to nginx (nginx, traefik, haproxy) |
 | ingress.enabled | bool | `false` | Enables the use of an ingress controller. |
@@ -25,12 +24,10 @@ A Helm chart for Kubernetes
 | replicaCount | int | `1` | Configure the number of replicas to run. |
 | resources | object | `{}` | Enable autoscaling for the deployment. |
 | securityContext | object | `{}` | Configure the security context for the container. |
-| service | object | `{"containerPort":1080,"port":80,"smtpPort":1025,"type":"ClusterIP"}` | Configure the service to be used in the application. |
 | service.containerPort | int | `1080` | The container port to expose on the service. |
 | service.port | int | `80` | The port to expose on the service. |
 | service.smtpPort | int | `1025` | The container port to expose on the service for the SMTP server. |
 | service.type | string | `"ClusterIP"` | The type of service to create. |
-| serviceAccount | object | `{"annotations":{},"create":true,"name":""}` | Configure the name of the service account to use. |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
 | serviceAccount.create | bool | `true` | Specifies whether a service account should be created |
 | serviceAccount.name | string | `""` | The name of the service account to use. If not set and create is true, a name is generated using the fullname template |

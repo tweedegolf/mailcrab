@@ -2,32 +2,43 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# -- Configure the number of replicas to run.
 replicaCount: 1
 
 image:
+  # -- Image to use for the deployment.
   repository: marlonb/mailcrab
+  # -- Specify an imagePullPolicy, defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   pullPolicy: Always
-  # Overrides the image tag whose default is the chart appVersion.
+  # -- Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 
+# -- If needed, specity a custom imagePullSecrets to use with priavet registries.
 imagePullSecrets: []
+
+# -- Configure the name override for resources.
 nameOverride: ""
+
+# -- Configure the fullname override for resources.
 fullnameOverride: ""
 
+# -- Configure the name of the service account to use.
 serviceAccount:
-  # Specifies whether a service account should be created
+  # -- Specifies whether a service account should be created
   create: true
-  # Annotations to add to the service account
+  # -- Annotations to add to the service account
   annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
+  # -- The name of the service account to use. If not set and create is true, a name is generated using the fullname template
   name: ""
 
+# -- Configure annotations to be required by the pods to run the application.
 podAnnotations: {}
 
+# -- Configure the pod security context.
 podSecurityContext: {}
   # fsGroup: 2000
 
+# -- Configure the security context for the container.
 securityContext: {}
   # capabilities:
   #   drop:
@@ -36,28 +47,40 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+# -- Configure the service to be used in the application.
 service:
+  # -- The type of service to create.
   type: ClusterIP
+  # -- The port to expose on the service.
   port: 80
+  # -- The container port to expose on the service.
   containerPort: 1080
+  # -- The container port to expose on the service for the SMTP server.
   smtpPort: 1025
 
+# -- Configure the ingress to be used in the application.
 ingress:
+  # -- Enables the use of an ingress controller.
   enabled: false
+  # -- The class of the Ingress controller to use, default to nginx (nginx, traefik, haproxy)
   className: ""
+  # -- Annotations to add to the ingress
   annotations: {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
+  # -- Hostnames.
   hosts:
     - host: chart-example.local
       paths:
         - path: /
           pathType: ImplementationSpecific
+  # -- TLS configuration for ingress
   tls: []
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local
 
+# -- Enable autoscaling for the deployment.
 resources: {}
   # We usually recommend not to specify default resources and to leave this as a conscious
   # choice for the user. This also increases chances charts run on environments with little
@@ -69,9 +92,3 @@ resources: {}
   # requests:
   #   cpu: 100m
   #   memory: 128Mi
-
-nodeSelector: {}
-
-tolerations: []
-
-affinity: {}

@@ -142,7 +142,7 @@ To deploy MailCrab to a Kubernetes cluster, you can use [Helm Chart](./charts/ma
 helm install mailcrab ./charts/mailcrab -f values.yaml
 ```
 
-For more information on configuring the Helm Chart, see the [values.yaml](./charts/mailcrab/values.yaml) file.
+For more information on configuring the Helm Chart, see the chart [README](./charts/mailcrab/README.md).
 
 ## Sample messages
 

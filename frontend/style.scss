@@ -95,7 +95,14 @@ body {
     }
 
     &.invert {
-      .body {
+      pre {
+        color: var(--white);
+        background: var(--black);
+      }
+    }
+
+    &.no-invert {
+      iframe {
         filter: invert(1);
       }
     }
@@ -483,6 +490,7 @@ header {
         margin-top: 0.75rem;
         color: var(--black);
         background: var(--white);
+        border: 1px solid var(--table-border);
 
         pre {
           font-family: Inter, sans-serif;
@@ -491,10 +499,14 @@ header {
 
         iframe,
         pre {
-          border: 1px solid #ddd;
           width: 100%;
           height: 100%;
           padding: 0.5rem;
+        }
+
+        iframe {
+          border: none;
+          background: white;
         }
       }
     }

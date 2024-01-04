@@ -7,8 +7,8 @@ use std::{
     str::FromStr,
     sync::{Arc, RwLock},
 };
-use tokio::{sync::broadcast::Receiver, time::Duration};
-use tokio_graceful_shutdown::Toplevel;
+use tokio::{signal, sync::broadcast::Receiver, task::JoinSet, time::Duration};
+use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
 use types::{MailMessage, MessageId};
@@ -17,7 +17,7 @@ use crate::{
     error::{Error, Result},
     smtp::mail_server,
     storage::storage,
-    web_server::http_server,
+    web_server::web_server,
 };
 
 mod error;
@@ -108,24 +108,70 @@ async fn run() -> i32 {
     // store broadcasted messages in a key/value store
     let state = app_state.clone();
 
-    match Toplevel::new()
-        .start("Storage server", move |h| storage(storage_rx, state, h))
-        .start("Mail server", move |h| {
-            mail_server(smtp_host, smtp_port, tx, enable_tls_auth, h)
-        })
-        .start("Web server", move |h| {
-            http_server(http_host, http_port, app_state, h)
-        })
-        .catch_signals()
-        .handle_shutdown_requests(Duration::from_millis(5000))
-        .await
-    {
-        Ok(_) => 0,
-        Err(e) => {
-            error!("MailCrab error {e}");
+    // join multiple tasks and handle graceful shutdown on signals
+    let token = CancellationToken::new();
+    let abort_token = CancellationToken::new();
+    let mut set = JoinSet::new();
 
-            1
+    set.spawn(storage(storage_rx, state, token.clone()));
+    set.spawn(mail_server(
+        smtp_host,
+        smtp_port,
+        tx,
+        enable_tls_auth,
+        token.clone(),
+    ));
+    set.spawn(web_server(http_host, http_port, app_state, token.clone()));
+
+    tokio::spawn({
+        let abort_token = abort_token.clone();
+        async move {
+            shutdown_signal().await;
+            info!("Received shutdown sgnal");
+            token.cancel();
+            tokio::time::sleep(Duration::from_secs(5)).await;
+            abort_token.clone().cancel();
         }
+    });
+
+    loop {
+        tokio::select! {
+            r = set.join_next() => match r {
+                Some(Ok(_)) => {},
+                Some(Err(e)) => error!("{e}"),
+                None => {
+                    info!("MailCrab graceful shutdown successful");
+
+                    return 0;
+                },
+            },
+            _ = abort_token.cancelled() => {
+                set.abort_all();
+                error!("MailCrab service aborted");
+
+                return 1;
+            }
+        }
+    }
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
     }
 }
 

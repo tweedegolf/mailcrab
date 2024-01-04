@@ -1,6 +1,6 @@
 use std::net::IpAddr;
 use tokio::sync::broadcast::Sender;
-use tokio_graceful_shutdown::SubsystemHandle;
+use tokio_util::sync::CancellationToken;
 use tracing::error;
 
 use crate::{error::Result, types::MailMessage};
@@ -17,8 +17,8 @@ pub(crate) async fn mail_server(
     smtp_port: u16,
     tx: Sender<MailMessage>,
     enable_tls_auth: bool,
-    handle: SubsystemHandle,
-) -> Result<()> {
+    token: CancellationToken,
+) -> Result<&'static str> {
     let mut server = MailServer::new(tx).with_address((smtp_host, smtp_port).into());
 
     if enable_tls_auth {
@@ -31,14 +31,14 @@ pub(crate) async fn mail_server(
             Err(e) => {
                 error!("MailCrab mail server error {e}");
 
-                return Ok(());
+                return Ok("mail");
             }
         }
     }
 
-    if let Err(e) = server.listen(handle).await {
+    if let Err(e) = server.serve(token).await {
         error!("MailCrab mail server error {e}");
     }
 
-    Ok(())
+    Ok("mail")
 }

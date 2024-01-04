@@ -1,5 +1,5 @@
 use axum::{
-    body,
+    body::Body,
     extract::{
         ws::{self, WebSocket},
         Path, WebSocketUpgrade,
@@ -15,13 +15,14 @@ use std::{
     net::{IpAddr, SocketAddr},
     sync::Arc,
 };
-use tokio_graceful_shutdown::SubsystemHandle;
+use tokio::net::TcpListener;
+use tokio_util::sync::CancellationToken;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::{
-    error::Error,
+    error::{Error, Result as AppResult},
     types::{Action, MailMessage, MailMessageMetadata},
     AppState, Asset, VERSION,
 };
@@ -176,7 +177,7 @@ async fn version_handler() -> Result<Json<VersionInfo>, StatusCode> {
 async fn not_found() -> Response {
     Response::builder()
         .status(StatusCode::NOT_FOUND)
-        .body(body::boxed(body::Full::from("404")))
+        .body(Body::from("404"))
         .unwrap()
 }
 
@@ -202,18 +203,18 @@ async fn static_handler(uri: Uri) -> impl IntoResponse {
     match (Asset::get(path), mime) {
         (Some(content), Some(mime)) => Response::builder()
             .header(header::CONTENT_TYPE, mime)
-            .body(body::boxed(body::Full::from(content.data)))
+            .body(Body::from(content.data))
             .unwrap(),
         _ => not_found().await,
     }
 }
 
-pub async fn http_server(
+pub async fn web_server(
     host: IpAddr,
     port: u16,
     app_state: Arc<AppState>,
-    subsys: SubsystemHandle,
-) -> Result<(), Error> {
+    token: CancellationToken,
+) -> AppResult<&'static str> {
     let mut router = Router::new()
         .route("/ws", get(ws_handler))
         .route("/api/messages", get(messages_handler))
@@ -240,10 +241,14 @@ pub async fn http_server(
     app = app.layer(Extension(app_state));
 
     let addr = SocketAddr::from((host, port));
+    let listener = TcpListener::bind(&addr).await?;
 
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .with_graceful_shutdown(subsys.on_shutdown_requested())
+    info!("HTTP server ready to accept connections");
+
+    axum::serve(listener, app)
+        .with_graceful_shutdown(Box::leak(Box::new(token)).cancelled())
         .await
-        .map_err(|e| Error::WebServer(e.to_string()))
+        .map_err(|e| Error::WebServer(e.to_string()))?;
+
+    Ok("http")
 }

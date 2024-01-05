@@ -214,7 +214,7 @@ pub async fn web_server(
     port: u16,
     app_state: Arc<AppState>,
     token: CancellationToken,
-) -> AppResult<&'static str> {
+) -> AppResult<()> {
     let mut router = Router::new()
         .route("/ws", get(ws_handler))
         .route("/api/messages", get(messages_handler))
@@ -250,5 +250,5 @@ pub async fn web_server(
         .await
         .map_err(|e| Error::WebServer(e.to_string()))?;
 
-    Ok("http")
+    Ok(())
 }

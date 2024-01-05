@@ -18,11 +18,10 @@ pub(crate) async fn mail_server(
     tx: Sender<MailMessage>,
     enable_tls_auth: bool,
     token: CancellationToken,
-) -> Result<&'static str> {
-    let mut server = MailServer::new(tx).with_address((smtp_host, smtp_port).into());
-
-    if enable_tls_auth {
-        server = match server
+) -> Result<()> {
+    let server = if enable_tls_auth {
+        match MailServer::new(tx)
+            .with_address((smtp_host, smtp_port).into())
             .with_authentication()
             .with_tls(TlsMode::Wrapped)
             .await
@@ -31,14 +30,16 @@ pub(crate) async fn mail_server(
             Err(e) => {
                 error!("MailCrab mail server error {e}");
 
-                return Ok("mail");
+                return Ok(());
             }
         }
-    }
+    } else {
+        MailServer::new(tx).with_address((smtp_host, smtp_port).into())
+    };
 
     if let Err(e) = server.serve(token).await {
         error!("MailCrab mail server error {e}");
     }
 
-    Ok("mail")
+    Ok(())
 }

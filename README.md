@@ -94,7 +94,7 @@ The web interface will also be served at [http://localhost:1080/emails/](http://
 
 ### Reverse proxy
 
-See [the reverse proxy guide](./Reverse_proxy.md).
+See [the reverse proxy guide](./reverse_proxy.md).
 
 ### Retention period
 
@@ -141,6 +141,14 @@ The `samples` directory contains a couple of test messages. These can be sent us
 ```sh
 cd backend/
 cargo test send_sample_messages -- --ignored
+```
+
+Alternatively you can send messages using curl:
+
+```sh
+curl smtp://127.0.0.1:1025 --mail-from myself@example.com --mail-rcpt receiver@example.com --upload-file samples/normal.email --user 'user:pass'
+# with tls
+curl -k --ssl-reqd smtps://127.0.0.1:1025 --mail-from myself@example.com --mail-rcpt receiver@example.com --upload-file samples/normal.email --user 'user:pass'
 ```
 
 ## Development

@@ -11,7 +11,7 @@ pub(crate) async fn storage(
     mut storage_rx: Receiver<MailMessage>,
     state: Arc<AppState>,
     token: CancellationToken,
-) -> Result<&'static str> {
+) -> Result<()> {
     let mut running = true;
     // every retention_period / 10 seconds the messages will be filtered, keeping only messages
     // that are older than retention_period
@@ -53,5 +53,5 @@ pub(crate) async fn storage(
         }
     }
 
-    Ok("storage")
+    Ok(())
 }

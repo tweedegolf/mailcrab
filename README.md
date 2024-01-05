@@ -134,6 +134,16 @@ services:
     networks: [default]
 ```
 
+## Kubernetes deployment
+
+To deploy MailCrab to a Kubernetes cluster, you can use [Helm Chart](./charts/mailcrab/) by cloning this repository and running:
+
+```sh
+helm install mailcrab ./charts/mailcrab -f values.yaml
+```
+
+For more information on configuring the Helm Chart, see the chart [README](./charts/mailcrab/README.md).
+
 ## Sample messages
 
 The `samples` directory contains a couple of test messages. These can be sent using by running:

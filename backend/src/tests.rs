@@ -16,7 +16,6 @@ use lettre::{
 use reqwest::Client;
 use std::ffi::OsStr;
 use tokio::time::{sleep, Duration};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{parse_env_var, run, types::MailMessageMetadata};
 
@@ -172,26 +171,11 @@ async fn receive_message() {
 #[tokio::test]
 #[ignore]
 async fn send_sample_messages() {
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::new(
-            std::env::var("RUST_LOG").unwrap_or_else(|_| "trace".into()),
-        ))
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
-    let _smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
+    let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
     let mut paths = std::fs::read_dir("../samples").unwrap();
-    let mailer = SmtpTransport::from_url("smtps://user:pass@127.0.0.1:1025")
-        .unwrap()
-        .tls(lettre::transport::smtp::client::Tls::Required(
-            lettre::transport::smtp::client::TlsParametersBuilder::new("maurits".to_string())
-                .dangerous_accept_invalid_certs(true)
-                .build_rustls()
-                .unwrap(),
-        ))
+    let mailer = SmtpTransport::builder_dangerous("127.0.0.1".to_string())
+        .port(smtp_port)
         .build();
-
-    dbg!(&mailer);
 
     while let Some(Ok(entry)) = paths.next() {
         // skip non *.email files

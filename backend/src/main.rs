@@ -127,10 +127,10 @@ async fn run() -> i32 {
         let abort_token = abort_token.clone();
         async move {
             shutdown_signal().await;
-            info!("Received shutdown sgnal");
+            info!("Received shutdown signal");
             token.cancel();
             tokio::time::sleep(Duration::from_secs(5)).await;
-            abort_token.clone().cancel();
+            abort_token.cancel();
         }
     });
 

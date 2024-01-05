@@ -44,7 +44,7 @@ async fn load_key<'a>() -> Option<PrivatePkcs8KeyDer<'a>> {
 /// read or generate a certioficate + key for the SMTP server
 pub(super) async fn create_tls_acceptor(name: &str) -> Result<TlsAcceptor> {
     let (certs, key) = match (load_certs().await, load_key().await) {
-        (Some(c), Some(k)) => (c, k),
+        (Some(cert), Some(key)) => (cert, key),
         _ => {
             info!("Generating self-signed certificate...");
 

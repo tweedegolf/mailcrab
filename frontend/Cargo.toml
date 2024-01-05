@@ -1,6 +1,6 @@
 [package]
 name = "mailcrab-frontend"
-version = "1.0.0-alpha.0"
+version = "1.0.0-alpha.2"
 edition = "2021"
 publish = false
 
@@ -8,7 +8,7 @@ publish = false
 base64 = "0.13"
 futures = "0.3"
 gloo-console = "0.3"
-gloo-net = "0.4"
+gloo-net = "0.5"
 gloo-utils = "0.2"
 js-sys = "0.3"
 serde = { version = "1.0", features = ["derive"] }

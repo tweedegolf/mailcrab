@@ -1,6 +1,7 @@
 use std::{ops::Sub, sync::Arc, time::SystemTime};
 use tokio::{sync::broadcast::Receiver, time::Duration};
-use tokio_graceful_shutdown::SubsystemHandle;
+use tokio_util::sync::CancellationToken;
+use tracing::info;
 
 use crate::{error::Result, types::MailMessage, AppState};
 
@@ -9,7 +10,7 @@ use crate::{error::Result, types::MailMessage, AppState};
 pub(crate) async fn storage(
     mut storage_rx: Receiver<MailMessage>,
     state: Arc<AppState>,
-    handle: SubsystemHandle,
+    token: CancellationToken,
 ) -> Result<()> {
     let mut running = true;
     // every retention_period / 10 seconds the messages will be filtered, keeping only messages
@@ -21,6 +22,8 @@ pub(crate) async fn storage(
         } else {
             state.retention_period / 10
         });
+
+    info!("Storage server ready for events");
 
     while running {
         tokio::select! {
@@ -43,7 +46,8 @@ pub(crate) async fn storage(
                     }
                 }
             },
-            _ = handle.on_shutdown_requested() => {
+            _ = token.cancelled() => {
+                info!("Shutting down storage server");
                 running = false;
             },
         }

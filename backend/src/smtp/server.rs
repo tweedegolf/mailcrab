@@ -1,9 +1,9 @@
 use mailin::{AuthMechanism, SessionBuilder};
 use std::net::SocketAddr;
-use tokio::{net::TcpListener, sync::broadcast::Sender, task::JoinHandle};
-use tokio_graceful_shutdown::SubsystemHandle;
+use tokio::{net::TcpListener, sync::broadcast::Sender};
 use tokio_rustls::TlsAcceptor;
-use tracing::{debug, error, info};
+use tokio_util::sync::CancellationToken;
+use tracing::{debug, info};
 
 use crate::{error::Result, smtp::connection::handle_connection, types::MailMessage};
 
@@ -71,27 +71,17 @@ impl MailServer {
         self
     }
 
-    pub(super) async fn listen(self, handle: SubsystemHandle) -> Result<JoinHandle<Result<()>>> {
+    pub(super) async fn serve(&self, token: CancellationToken) -> Result<()> {
         let listener = TcpListener::bind(&self.address).await?;
-
-        let join = tokio::task::spawn(async move {
-            if let Err(e) = self.serve(listener, handle).await {
-                error!("MailCrab mail server error {e}");
-            }
-
-            Ok(())
-        });
-
-        Ok(join)
-    }
-
-    pub(super) async fn serve(&self, listener: TcpListener, handle: SubsystemHandle) -> Result<()> {
-        info!("SMTP server ready to accept connections");
+        info!(
+            "SMTP server ready to accept connections on {}",
+            &self.address
+        );
 
         loop {
             let (socket, peer_addr) = tokio::select! {
                 result = listener.accept() => result?,
-                _ = handle.on_shutdown_requested() => {
+                _ = token.cancelled() => {
                     info!("Shutting down mail server");
                     return Ok(());
                 },

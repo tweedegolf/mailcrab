@@ -6,6 +6,7 @@ html {
 
 body {
   font-size: 16px;
+  min-width: 560px;
 }
 
 *,
@@ -106,6 +107,10 @@ body {
         filter: invert(1);
       }
     }
+
+    .list li.attachments .subject::before {
+      filter: invert(1);
+    }
   }
 }
 
@@ -181,6 +186,10 @@ header {
   height: calc(100vh - 4rem);
   display: flex;
   flex: 1;
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+  }
 }
 
 .empty {
@@ -210,6 +219,20 @@ header {
   min-width: 40rem;
   max-width: 50rem;
   overflow-y: auto;
+
+  @media (max-width: 1400px) {
+    min-width: 30rem;
+  }
+
+  @media (max-width: 1150px) {
+    min-width: 25rem;
+  }
+
+  @media (max-width: 1024px) {
+    width: 100%;
+    max-width: 100%;
+    height: 40%;
+  }
 
   ul {
     display: flex;
@@ -257,6 +280,10 @@ header {
 
       .name {
         font-weight: 500;
+      }
+
+      .date {
+        white-space: nowrap;
       }
 
       .name + .email {

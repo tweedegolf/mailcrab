@@ -25,7 +25,10 @@ async fn load_certs<'a>() -> Option<Vec<CertificateDer<'a>>> {
     if certs.is_empty() {
         None
     } else {
-        info!("Certificate loaded from disk:\n{}", String::from_utf8_lossy(&pem_bytes));
+        info!(
+            "Certificate loaded from disk:\n{}",
+            String::from_utf8_lossy(&pem_bytes)
+        );
 
         Some(certs)
     }

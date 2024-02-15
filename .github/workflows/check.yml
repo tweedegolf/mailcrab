@@ -8,11 +8,11 @@ jobs:
   check:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: rustup toolchain install stable --profile minimal
       - run: rustup component add clippy
 
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cargo/bin/
@@ -23,7 +23,7 @@ jobs:
           key: frontend-${{ hashFiles('frontend/Cargo.toml') }}
           restore-keys: frontend-
 
-      - uses: actions/cache/restore@v3
+      - uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cargo/bin/

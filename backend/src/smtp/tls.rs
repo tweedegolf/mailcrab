@@ -25,7 +25,7 @@ async fn load_certs<'a>() -> Option<Vec<CertificateDer<'a>>> {
     if certs.is_empty() {
         None
     } else {
-        info!("Loaded certificate {CERT_PATH}");
+        info!("Certificate loaded from disk:\n{}", String::from_utf8_lossy(&pem_bytes));
 
         Some(certs)
     }
@@ -56,8 +56,10 @@ pub(super) async fn create_tls_acceptor(name: &str) -> Result<TlsAcceptor> {
             let full_cert = Certificate::from_params(cert_params)?;
             let cert_pem = full_cert.serialize_pem()?;
 
-            fs::write(CERT_PATH, cert_pem).await?;
+            fs::write(CERT_PATH, &cert_pem).await?;
             fs::write(KEY_PATH, full_cert.serialize_private_key_pem()).await?;
+
+            info!("Certificate generated:\n{cert_pem}");
 
             let cert = CertificateDer::from(full_cert.serialize_der()?);
             let key = PrivatePkcs8KeyDer::from(full_cert.serialize_private_key_der());

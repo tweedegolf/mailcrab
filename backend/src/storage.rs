@@ -42,7 +42,16 @@ pub(crate) async fn storage(
                             .duration_since(SystemTime::UNIX_EPOCH)?
                             .as_secs() as i64;
 
-                        storage.retain(|_, mail_message| mail_message.time > remove_before);
+                        storage.retain(|_, mail_message| {
+                            if mail_message.time > remove_before {
+                                true
+                            } else {
+                                info!("Removing old message {} from {}", mail_message.id, mail_message.envelope_from);
+
+                                false
+                            }
+
+                        });
                     }
                 }
             },

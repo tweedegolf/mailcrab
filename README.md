@@ -156,7 +156,7 @@ cargo test send_sample_messages -- --ignored
 Alternatively you can send messages using curl:
 
 ```sh
-curl smtp://127.0.0.1:1025 --mail-from myself@example.com --mail-rcpt receiver@example.com --upload-file samples/normal.email --user 'user:pass'
+curl smtp://127.0.0.1:1025 --mail-from myself@example.com --mail-rcpt receiver@example.com --upload-file samples/normal.email
 # with tls
 curl -k --ssl-reqd smtps://127.0.0.1:1025 --mail-from myself@example.com --mail-rcpt receiver@example.com --upload-file samples/normal.email --user 'user:pass'
 ```

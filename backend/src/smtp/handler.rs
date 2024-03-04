@@ -120,4 +120,8 @@ impl mailin::Handler for MailHandler {
     ) -> mailin::Response {
         mailin::response::AUTH_OK
     }
+
+    fn auth_login(&mut self, _username: &str, _password: &str) -> mailin::Response {
+        mailin::response::AUTH_OK
+    }
 }

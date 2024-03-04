@@ -67,6 +67,7 @@ impl MailServer {
 
     pub(super) fn with_authentication(mut self) -> Self {
         self.session_builder.enable_auth(AuthMechanism::Plain);
+        self.session_builder.enable_auth(AuthMechanism::Login);
 
         self
     }

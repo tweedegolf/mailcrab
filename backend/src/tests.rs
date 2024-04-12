@@ -41,7 +41,7 @@ async fn send_message(
     .join("\n");
     let html: String = format!(
         "{}\n<p><a href=\"https://github.com/tweedegolf/mailcrab\">external link</a></p>",
-        body.replace("\n", "<br>\n")
+        body.replace('\n', "<br>\n")
     );
 
     let builder = Message::builder()

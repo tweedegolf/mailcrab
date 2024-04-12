@@ -6,7 +6,7 @@ use axum::{
     },
     http::{header, StatusCode, Uri},
     response::{Html, IntoResponse, Response},
-    routing::get,
+    routing::{get, post},
     Extension, Json, Router,
 };
 use serde::Serialize;
@@ -165,6 +165,38 @@ async fn message_body_handler(
     }
 }
 
+/// delete a message
+async fn message_delete_handler(
+    Path(id): Path<Uuid>,
+    Extension(state): Extension<Arc<AppState>>,
+) -> Result<StatusCode, StatusCode> {
+    if let Ok(mut storage) = state.storage.write() {
+        if storage.remove(&id).is_some() {
+            info!("message {} removed", &id);
+
+            Ok(StatusCode::OK)
+        } else {
+            Err(StatusCode::NOT_FOUND)
+        }
+    } else {
+        Err(StatusCode::INTERNAL_SERVER_ERROR)
+    }
+}
+
+/// delete all messages
+async fn message_delete_all_handler(
+    Extension(state): Extension<Arc<AppState>>,
+) -> Result<StatusCode, StatusCode> {
+    if let Ok(mut storage) = state.storage.write() {
+        storage.clear();
+        info!("storage cleared");
+
+        Ok(StatusCode::OK)
+    } else {
+        Err(StatusCode::INTERNAL_SERVER_ERROR)
+    }
+}
+
 /// return version
 async fn version_handler() -> Result<Json<VersionInfo>, StatusCode> {
     let vi = VersionInfo {
@@ -220,6 +252,8 @@ pub async fn web_server(
         .route("/api/messages", get(messages_handler))
         .route("/api/message/:id", get(message_handler))
         .route("/api/message/:id/body", get(message_body_handler))
+        .route("/api/delete/:id", post(message_delete_handler))
+        .route("/api/delete-all", post(message_delete_all_handler))
         .route("/api/version", get(version_handler))
         .nest_service("/static", get(static_handler));
 

@@ -2,6 +2,25 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+# Enable autoscaling using HorizontalPodAutoscaler. Note that the replicaCount would be ignored if autoscaling is enabled
+autoscaling:
+  enabled: false
+#  minReplicas: 2
+#  maxReplicas: 5
+#  metrics:
+#    - type: Resource
+#      resource:
+#        name: cpu
+#        target:
+#          type: Utilization
+#          averageUtilization: 60
+#    - type: Resource
+#      resource:
+#        name: memory
+#        target:
+#          type: Utilization
+#          averageUtilization: 60
+
 # -- Configure the number of replicas to run.
 replicaCount: 1
 

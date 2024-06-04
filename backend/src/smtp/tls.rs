@@ -1,4 +1,4 @@
-use rcgen::{Certificate, CertificateParams, DistinguishedName, DnType};
+use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair};
 use std::{io::BufReader, sync::Arc};
 use tokio::fs;
 use tokio_rustls::{
@@ -56,16 +56,16 @@ pub(super) async fn create_tls_acceptor(name: &str) -> Result<TlsAcceptor> {
             dis_name.push(DnType::CommonName, name);
             cert_params.distinguished_name = dis_name;
 
-            let full_cert = Certificate::from_params(cert_params)?;
-            let cert_pem = full_cert.serialize_pem()?;
+            let key_pair = KeyPair::generate()?;
+            let cert = cert_params.self_signed(&key_pair)?;
 
-            fs::write(CERT_PATH, &cert_pem).await?;
-            fs::write(KEY_PATH, full_cert.serialize_private_key_pem()).await?;
+            fs::write(CERT_PATH, cert.pem()).await?;
+            fs::write(KEY_PATH, key_pair.serialize_pem()).await?;
 
-            info!("Certificate generated:\n{cert_pem}");
+            info!("Certificate generated:\n{}", cert.pem());
 
-            let cert = CertificateDer::from(full_cert.serialize_der()?);
-            let key = PrivatePkcs8KeyDer::from(full_cert.serialize_private_key_der());
+            let cert = cert.der().clone();
+            let key = PrivatePkcs8KeyDer::from(key_pair.serialize_der());
 
             (vec![cert], key)
         }

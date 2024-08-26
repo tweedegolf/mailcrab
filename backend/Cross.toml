@@ -1,0 +1,12 @@
+[build]
+pre-build = [
+    "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable",
+    ". $HOME/.cargo/env",
+    "cargo install --force --locked bindgen-cli && mv $HOME/.cargo/bin/bindgen /usr/bin",
+    "rm -rf $HOME/.cargo"
+]
+
+[build.env]
+passthrough = [
+    "AWS_LC_SYS_CMAKE_BUILDER=1"
+]

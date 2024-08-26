@@ -1,21 +1,23 @@
 name: Build
 
 on:
+  pull_request:
+    branches: [ "main" ]
   push:
     branches: [ "main" ]
 
 jobs:
   frontend:
     name: Build frontend assets
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install stable --profile minimal
       - run: rustup target add wasm32-unknown-unknown
-      - uses: jetli/trunk-action@v0.4.0
+      - uses: jetli/trunk-action@v0.5.0
         with:
-          version: 'v0.16.0'
+          version: 'latest'
 
       - uses: actions/cache@v4
         with:
@@ -40,7 +42,7 @@ jobs:
   build:
     name: Binaries for ${{ matrix.name }}
     needs: frontend
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -52,27 +54,22 @@ jobs:
           - linux-arm64-musl
         include:
           - name: linux-x86-64-gnu
-            os: ubuntu-20.04
             target: x86_64-unknown-linux-gnu
             platform: ~
 
           - name: linux-armv7-gnu
-            os: ubuntu-20.04
             target: armv7-unknown-linux-gnueabihf
             platform: ~
 
           - name: linux-arm64-gnu
-            os: ubuntu-20.04
             target: aarch64-unknown-linux-gnu
             platform: ~
 
           - name: linux-x86-64-musl
-            os: ubuntu-20.04
             target: x86_64-unknown-linux-musl
             platform: amd64
 
           - name: linux-arm64-musl
-            os: ubuntu-20.04
             target: aarch64-unknown-linux-musl
             platform: arm64
 

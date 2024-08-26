@@ -7,15 +7,15 @@ on:
 jobs:
   frontend:
     name: Build frontend assets
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install stable --profile minimal
       - run: rustup target add wasm32-unknown-unknown
-      - uses: jetli/trunk-action@v0.4.0
+      - uses: jetli/trunk-action@v0.5.0
         with:
-          version: 'v0.16.0'
+          version: 'latest'
 
       - uses: actions/cache@v4
         with:

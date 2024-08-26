@@ -113,7 +113,7 @@ jobs:
       - name: Cross build
         run: cross build --release --locked --target ${{ matrix.target }} --manifest-path backend/Cargo.toml
         env:
-          AWS_LC_SYS_CMAKE_BUILDER: '1'
+          AWS_LC_SYS_CMAKE_BUILDER: 1
 
       - name: Copy binaries
         if: ${{ matrix.platform == null }}

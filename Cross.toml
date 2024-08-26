@@ -1,0 +1,4 @@
+[build.env]
+passthrough = [
+    "AWS_LC_SYS_CMAKE_BUILDER"
+]

@@ -42,7 +42,7 @@ jobs:
   build:
     name: Binaries for ${{ matrix.name }}
     needs: frontend
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -54,27 +54,22 @@ jobs:
           - linux-arm64-musl
         include:
           - name: linux-x86-64-gnu
-            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             platform: ~
 
           - name: linux-armv7-gnu
-            os: ubuntu-24.04
             target: armv7-unknown-linux-gnueabihf
             platform: ~
 
           - name: linux-arm64-gnu
-            os: ubuntu-24.04
             target: aarch64-unknown-linux-gnu
             platform: ~
 
           - name: linux-x86-64-musl
-            os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             platform: amd64
 
           - name: linux-arm64-musl
-            os: ubuntu-24.04
             target: aarch64-unknown-linux-musl
             platform: arm64
 
@@ -102,3 +97,5 @@ jobs:
 
       - name: Cross build
         run: cross build --release --locked --target ${{ matrix.target }} --manifest-path backend/Cargo.toml
+        env:
+          AWS_LC_SYS_CMAKE_BUILDER: '1'

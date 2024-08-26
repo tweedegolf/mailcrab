@@ -57,7 +57,7 @@ jobs:
   build:
     name: Binaries for ${{ matrix.name }}
     needs: frontend
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-24.04
 
     strategy:
       matrix:
@@ -69,34 +69,24 @@ jobs:
           - linux-arm64-musl
         include:
           - name: linux-x86-64-gnu
-            os: ubuntu-24.04
             target: x86_64-unknown-linux-gnu
             platform: ~
-            cross: false
 
           - name: linux-armv7-gnu
-            os: ubuntu-24.04
             target: armv7-unknown-linux-gnueabihf
             platform: ~
-            cross: true
 
           - name: linux-arm64-gnu
-            os: ubuntu-24.04
             target: aarch64-unknown-linux-gnu
             platform: ~
-            cross: true
 
           - name: linux-x86-64-musl
-            os: ubuntu-24.04
             target: x86_64-unknown-linux-musl
             platform: amd64
-            cross: true
 
           - name: linux-arm64-musl
-            os: ubuntu-24.04
             target: aarch64-unknown-linux-musl
             platform: arm64
-            cross: true
 
     steps:
       - uses: actions/checkout@v4
@@ -120,13 +110,10 @@ jobs:
 
       - run: cargo install cross --git https://github.com/cross-rs/cross || true
 
-      - name: Build
-        if: ${{ !matrix.cross }}
-        run: cargo build --release --locked --target ${{ matrix.target }} --manifest-path backend/Cargo.toml
-
       - name: Cross build
-        if: ${{ matrix.cross }}
         run: cross build --release --locked --target ${{ matrix.target }} --manifest-path backend/Cargo.toml
+        env:
+          AWS_LC_SYS_CMAKE_BUILDER: '1'
 
       - name: Copy binaries
         if: ${{ matrix.platform == null }}

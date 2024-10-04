@@ -1,6 +1,7 @@
 use futures::{channel::mpsc::Sender, StreamExt};
 use gloo_console::error;
 use wasm_bindgen_futures::spawn_local;
+use web_sys::NotificationOptions;
 use yew::prelude::*;
 
 use crate::{
@@ -64,6 +65,8 @@ impl Component for Overview {
             init_dark_mode();
         });
 
+        web_sys::Notification::request_permission().ok();
+
         Self {
             messages: vec![],
             tab: Tab::Formatted,
@@ -79,6 +82,17 @@ impl Component for Overview {
                 self.loading = value;
             }
             Msg::Message(message) => {
+                let notif_options = NotificationOptions::default();
+                notif_options.set_body(&message.subject);
+                let _ = web_sys::Notification::new_with_options(
+                    &format!(
+                        "MailCrab: {} <{}>",
+                        message.from.name.clone().unwrap_or_default(),
+                        message.from.email.clone().unwrap_or_default()
+                    ),
+                    &notif_options,
+                );
+
                 self.messages.push(*message);
             }
             Msg::Messages(messages) => {

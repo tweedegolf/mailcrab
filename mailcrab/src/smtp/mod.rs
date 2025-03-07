@@ -12,7 +12,7 @@ mod handler;
 mod server;
 mod tls;
 
-pub(crate) async fn mail_server(
+pub async fn mail_server(
     smtp_host: IpAddr,
     smtp_port: u16,
     tx: Sender<MailMessage>,

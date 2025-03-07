@@ -13,7 +13,9 @@ pub type MessageId = Uuid;
 #[derive(Deserialize, Debug)]
 pub enum Action {
     RemoveAll,
+    #[allow(unused)]
     Remove(MessageId),
+    #[allow(unused)]
     Open(MessageId),
 }
 

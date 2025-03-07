@@ -13,11 +13,12 @@ use lettre::{
     message::{Attachment, MultiPart, SinglePart, header::ContentType},
     transport::smtp::response::Response,
 };
+use mailcrab::MailMessageMetadata;
 use reqwest::Client;
 use std::ffi::OsStr;
 use tokio::time::{Duration, sleep};
 
-use crate::{parse_env_var, run, types::MailMessageMetadata};
+use crate::{parse_env_var, run};
 
 async fn send_message(
     with_html: bool,

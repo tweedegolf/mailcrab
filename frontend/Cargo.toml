@@ -1,8 +1,11 @@
 [package]
 name = "mailcrab-frontend"
-version = "1.5.0"
+version = "1.6.0"
 edition = "2024"
 publish = false
+license = "Apache-2.0 OR MIT"
+repository = "https://github.com/tweedegolf/mailcrab"
+description = "Email test server for development, written in Rust"
 
 [dependencies]
 base64 = "0.13"

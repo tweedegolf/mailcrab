@@ -3,7 +3,7 @@ use tokio::{sync::broadcast::Receiver, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
 
-use crate::{error::Result, types::MailMessage, AppState};
+use crate::{AppState, error::Result, types::MailMessage};
 
 /// storage task, stores all messages from the queue and optionally
 /// deletes old messages

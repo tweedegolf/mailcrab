@@ -8,8 +8,8 @@ use crate::{
 use wasm_bindgen_futures::spawn_local;
 use web_sys::MouseEvent;
 use yew::{
-    function_component, html, use_effect_with, use_state, Callback, Html, Properties,
-    UseStateHandle,
+    Callback, Html, Properties, UseStateHandle, function_component, html, use_effect_with,
+    use_state,
 };
 
 #[derive(Properties, PartialEq)]

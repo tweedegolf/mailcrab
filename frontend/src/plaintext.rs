@@ -1,5 +1,5 @@
 use crate::{message_header::MessageHeader, types::MailMessage};
-use yew::{function_component, html, Html, Properties};
+use yew::{Html, Properties, function_component, html};
 
 #[derive(Properties, Eq, PartialEq)]
 pub struct PlaintextProps {

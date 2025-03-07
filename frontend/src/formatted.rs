@@ -1,7 +1,7 @@
 use crate::{api::get_api_path, message_header::MessageHeader, types::MailMessage};
 use wasm_bindgen::JsCast;
 use web_sys::{Event, HtmlIFrameElement, HtmlLinkElement};
-use yew::{function_component, html, Html, Properties};
+use yew::{Html, Properties, function_component, html};
 
 #[derive(Properties, Eq, PartialEq)]
 pub struct FormattedProps {

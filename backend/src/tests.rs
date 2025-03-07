@@ -16,8 +16,9 @@ use lettre::{
 use reqwest::Client;
 use std::ffi::OsStr;
 use tokio::time::{Duration, sleep};
+use mailcrab::MailMessageMetadata;
 
-use crate::{parse_env_var, run, types::MailMessageMetadata};
+use crate::{parse_env_var, run};
 
 async fn send_message(
     with_html: bool,

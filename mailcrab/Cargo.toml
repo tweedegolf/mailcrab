@@ -1,5 +1,7 @@
+cargo-features = ["edition2024"]
+
 [package]
-name = "mailcrab-backend"
+name = "mailcrab"
 version = "1.6.0"
 edition = "2024"
 publish = true
@@ -8,16 +10,19 @@ repository = "https://github.com/tweedegolf/mailcrab"
 description = "Email test server for development, written in Rust"
 
 [dependencies]
-axum = { version = "0.8", features = ["ws"] }
-mailcrab = { path = "../mailcrab" }
-rust-embed = "8.0"
+base64ct = { version = "1.6", features = ["alloc"] }
+chrono = "0.4"
+humansize = "2.0"
+mail-parser = "0.10"
+mailin = "0.6"
+rcgen = "0.13"
+rustls-pemfile = "2.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+thiserror = "2.0"
 tokio = { version = "1", features = ["full"] }
+tokio-rustls = "0.26"
 tokio-util = "0.7"
-tower-http = { version = "0.6", features = ["fs", "trace"] }
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 uuid = { version = "1.2", features = ["v4", "serde"] }
 
 [dev-dependencies]
@@ -30,4 +35,4 @@ lettre = { version = "0.11", default-features = false, features=[
     "tokio1"
 ] }
 fake = { version = "4.0", features=["derive"]}
-reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+rand = "0.9"

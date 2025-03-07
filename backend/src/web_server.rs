@@ -20,11 +20,13 @@ use tokio_util::sync::CancellationToken;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::{error, info, warn};
 use uuid::Uuid;
+use mailcrab::{
+    Error, Result as AppResult,
+    Action, MailMessage, MailMessageMetadata,
+};
 
 use crate::{
     AppState, Asset, VERSION,
-    error::{Error, Result as AppResult},
-    types::{Action, MailMessage, MailMessageMetadata},
 };
 
 #[derive(Debug, Serialize)]

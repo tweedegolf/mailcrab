@@ -11,19 +11,18 @@ use tokio::{signal, sync::broadcast::Receiver, task::JoinSet, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
-use types::{MailMessage, MessageId};
+use mailcrab::{
+    MailMessage, MessageId,
+    Error, Result,
+    mail_server,
+};
 
 use crate::{
-    error::{Error, Result},
-    smtp::mail_server,
     storage::storage,
     web_server::web_server,
 };
 
-mod error;
-mod smtp;
 mod storage;
-mod types;
 mod web_server;
 
 #[cfg(test)]

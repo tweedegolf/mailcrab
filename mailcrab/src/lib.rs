@@ -1,5 +1,4 @@
 use std::net::IpAddr;
-use smtp::mail_server;
 use tokio::sync::broadcast::Receiver;
 use tokio_util::sync::CancellationToken;
 
@@ -11,7 +10,9 @@ mod types;
 /// when compiling without cargo
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub use types::{MailMessage, MessageId, Address, Attachment};
+pub use error::{Error, Result};
+pub use smtp::mail_server;
+pub use types::{Action, Address, Attachment, MailMessage, MessageId, MailMessageMetadata};
 
 pub struct TestMailServerHandle {
     pub token: CancellationToken,
@@ -21,12 +22,14 @@ pub struct TestMailServerHandle {
 /// Start a test mail server, returns a channel on which messages can be received
 /// and a token to stop the server
 /// This server is NOT intended for production use, it is a development tool
-pub async fn development_mail_server(smtp_host: impl Into<IpAddr>, smtp_port: u16) -> TestMailServerHandle {
+pub async fn development_mail_server(
+    smtp_host: impl Into<IpAddr>,
+    smtp_port: u16,
+) -> TestMailServerHandle {
     let (tx, rx) = tokio::sync::broadcast::channel::<MailMessage>(128);
     let token = CancellationToken::new();
 
-    tokio::spawn(
-    mail_server(
+    tokio::spawn(mail_server(
         smtp_host.into(),
         smtp_port,
         tx,
@@ -34,19 +37,21 @@ pub async fn development_mail_server(smtp_host: impl Into<IpAddr>, smtp_port: u1
         token.clone(),
     ));
 
-    TestMailServerHandle {
-        token,
-        rx,
-    }
+    TestMailServerHandle { token, rx }
 }
-
 
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
 
-    use fake::{faker::{company::en::CatchPhrase, internet::en::SafeEmail}, Fake};
-    use lettre::{message::{header, SinglePart}, AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
+    use fake::{
+        Fake,
+        faker::{company::en::CatchPhrase, internet::en::SafeEmail},
+    };
+    use lettre::{
+        AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor,
+        message::{SinglePart, header},
+    };
     use rand::Rng;
 
     #[tokio::test]
@@ -56,9 +61,10 @@ mod tests {
 
         let mut handle = crate::development_mail_server([127, 0, 0, 1], port).await;
 
-        let mailer: AsyncSmtpTransport::<Tokio1Executor> = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous("127.0.0.1".to_string())
-            .port(port)
-            .build();
+        let mailer: AsyncSmtpTransport<Tokio1Executor> =
+            AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous("127.0.0.1".to_string())
+                .port(port)
+                .build();
 
         let email = Message::builder()
             .from(SafeEmail().fake::<String>().parse().unwrap())
@@ -67,7 +73,7 @@ mod tests {
             .singlepart(
                 SinglePart::builder()
                     .header(header::ContentType::TEXT_PLAIN)
-                    .body(CatchPhrase().fake::<String>())
+                    .body(CatchPhrase().fake::<String>()),
             )
             .expect("failed to build email");
 

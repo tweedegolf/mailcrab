@@ -2,8 +2,9 @@ use std::{ops::Sub, sync::Arc, time::SystemTime};
 use tokio::{sync::broadcast::Receiver, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
+use mailcrab::{MailMessage, Result};
 
-use crate::{AppState, error::Result, types::MailMessage};
+use crate::AppState;
 
 /// storage task, stores all messages from the queue and optionally
 /// deletes old messages

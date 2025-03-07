@@ -1,8 +1,8 @@
+use mailcrab::{MailMessage, Result};
 use std::{ops::Sub, sync::Arc, time::SystemTime};
 use tokio::{sync::broadcast::Receiver, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::info;
-use mailcrab::{MailMessage, Result};
 
 use crate::AppState;
 

@@ -9,6 +9,7 @@ use axum::{
     response::{Html, IntoResponse, Response},
     routing::{get, post},
 };
+use mailcrab::{Action, Error, MailMessage, MailMessageMetadata, Result as AppResult};
 use serde::Serialize;
 use std::{
     ffi::OsStr,
@@ -20,14 +21,8 @@ use tokio_util::sync::CancellationToken;
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
 use tracing::{error, info, warn};
 use uuid::Uuid;
-use mailcrab::{
-    Error, Result as AppResult,
-    Action, MailMessage, MailMessageMetadata,
-};
 
-use crate::{
-    AppState, Asset, VERSION,
-};
+use crate::{AppState, Asset, VERSION};
 
 #[derive(Debug, Serialize)]
 struct VersionInfo {

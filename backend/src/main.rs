@@ -1,3 +1,4 @@
+use mailcrab::{Error, MailMessage, MessageId, Result, mail_server};
 use rust_embed::{EmbeddedFile, RustEmbed};
 use std::{
     collections::HashMap,
@@ -11,16 +12,8 @@ use tokio::{signal, sync::broadcast::Receiver, task::JoinSet, time::Duration};
 use tokio_util::sync::CancellationToken;
 use tracing::{error, info};
 use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::SubscriberInitExt};
-use mailcrab::{
-    MailMessage, MessageId,
-    Error, Result,
-    mail_server,
-};
 
-use crate::{
-    storage::storage,
-    web_server::web_server,
-};
+use crate::{storage::storage, web_server::web_server};
 
 mod storage;
 mod web_server;

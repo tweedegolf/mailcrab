@@ -1,5 +1,3 @@
-cargo-features = ["edition2024"]
-
 [package]
 name = "mailcrab"
 version = "1.6.0"

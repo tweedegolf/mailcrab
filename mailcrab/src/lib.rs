@@ -12,7 +12,7 @@ pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub use error::{Error, Result};
 pub use smtp::mail_server;
-pub use types::{Action, Address, Attachment, MailMessage, MessageId, MailMessageMetadata};
+pub use types::{Action, Address, Attachment, MailMessage, MailMessageMetadata, MessageId};
 
 pub struct TestMailServerHandle {
     pub token: CancellationToken,
@@ -96,6 +96,6 @@ mod tests {
         // assert uuid length
         assert_eq!(received.id.to_string().len(), 36);
 
-        let _ = handle.token.cancel();
+        handle.token.cancel();
     }
 }

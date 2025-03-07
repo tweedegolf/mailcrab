@@ -1,7 +1,7 @@
 use crate::types::MailMessageMetadata;
 use js_sys::Date;
 use timeago::Formatter;
-use yew::{function_component, html, html_nested, use_state, Callback, Html, Properties};
+use yew::{Callback, Html, Properties, function_component, html, html_nested, use_state};
 use yew_hooks::use_interval;
 
 #[derive(Properties, PartialEq)]

@@ -1,5 +1,5 @@
 use crate::{dark_mode::toggle_body_invert, types::MailMessage};
-use yew::{function_component, html, html_nested, Callback, Html, Properties};
+use yew::{Callback, Html, Properties, function_component, html, html_nested};
 
 #[derive(Properties, Eq, PartialEq)]
 pub struct MessageHeaderProps {

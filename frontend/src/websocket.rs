@@ -1,6 +1,6 @@
 use futures::{
-    channel::mpsc::{Receiver, Sender},
     SinkExt, StreamExt,
+    channel::mpsc::{Receiver, Sender},
 };
 use gloo_console::error;
 use gloo_net::websocket::{self, futures::WebSocket};

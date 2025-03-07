@@ -259,21 +259,17 @@ pub async fn web_server(
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(DefaultMakeSpan::default().include_headers(true)),
-        )
-        .layer(Extension(app_state.clone()));
+        );
 
     if app_state.index.is_some() {
         router = router.route("/", get(index));
     }
 
     let app = match app_state.prefix.as_str() {
-        "/" => router,
+        "/" | "" => router,
         prefix => Router::new().nest(prefix, router.clone()),
-    };
-
-    // if &app_state.prefix != "/" {
-    //     app = app.nest("/", router);
-    // }
+    }
+    .layer(Extension(app_state.clone()));
 
     let addr = SocketAddr::from((host, port));
     let listener = TcpListener::bind(&addr).await?;

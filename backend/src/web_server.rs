@@ -1,13 +1,13 @@
 use axum::{
+    Extension, Json, Router,
     body::Body,
     extract::{
-        ws::{self, WebSocket},
         Path, WebSocketUpgrade,
+        ws::{self, WebSocket},
     },
-    http::{header, StatusCode, Uri},
+    http::{StatusCode, Uri, header},
     response::{Html, IntoResponse, Response},
     routing::{get, post},
-    Extension, Json, Router,
 };
 use serde::Serialize;
 use std::{
@@ -22,9 +22,9 @@ use tracing::{error, info, warn};
 use uuid::Uuid;
 
 use crate::{
+    AppState, Asset, VERSION,
     error::{Error, Result as AppResult},
     types::{Action, MailMessage, MailMessageMetadata},
-    AppState, Asset, VERSION,
 };
 
 #[derive(Debug, Serialize)]
@@ -45,7 +45,7 @@ async fn ws_handler(
         while active {
             tokio::select! {
                 _ = ping_interval.tick() => {
-                    if socket.send(ws::Message::Ping(vec![])).await.is_err() {
+                    if socket.send(ws::Message::Ping(Default::default())).await.is_err() {
                         info!("WS client disconnected");
                         active = false;
                     }
@@ -56,7 +56,7 @@ async fn ws_handler(
                             let metadata: MailMessageMetadata = message.into();
                             match serde_json::to_string(&metadata) {
                                 Ok(json) => {
-                                    if socket.send(ws::Message::Text(json)).await.is_err() {
+                                    if socket.send(ws::Message::Text(json.into())).await.is_err() {
                                         info!("WS client disconnected");
                                         active = false;
                                     }
@@ -250,29 +250,30 @@ pub async fn web_server(
     let mut router = Router::new()
         .route("/ws", get(ws_handler))
         .route("/api/messages", get(messages_handler))
-        .route("/api/message/:id", get(message_handler))
-        .route("/api/message/:id/body", get(message_body_handler))
-        .route("/api/delete/:id", post(message_delete_handler))
+        .route("/api/message/{id}", get(message_handler))
+        .route("/api/message/{id}/body", get(message_body_handler))
+        .route("/api/delete/{id}", post(message_delete_handler))
         .route("/api/delete-all", post(message_delete_all_handler))
         .route("/api/version", get(version_handler))
-        .nest_service("/static", get(static_handler));
+        .nest_service("/static", get(static_handler))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
+        )
+        .layer(Extension(app_state.clone()));
 
     if app_state.index.is_some() {
         router = router.route("/", get(index));
     }
 
-    let mut app = Router::new()
-        .nest(app_state.prefix.as_str(), router.clone())
-        .layer(
-            TraceLayer::new_for_http()
-                .make_span_with(DefaultMakeSpan::default().include_headers(true)),
-        );
+    let app = match app_state.prefix.as_str() {
+        "/" => router,
+        prefix => Router::new().nest(prefix, router.clone()),
+    };
 
-    if &app_state.prefix != "/" {
-        app = app.nest("/", router);
-    }
-
-    app = app.layer(Extension(app_state));
+    // if &app_state.prefix != "/" {
+    //     app = app.nest("/", router);
+    // }
 
     let addr = SocketAddr::from((host, port));
     let listener = TcpListener::bind(&addr).await?;

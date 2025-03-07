@@ -1,21 +1,21 @@
 use fake::{
+    Fake,
     faker::{
-        company::en::{Buzzword, CatchPhase},
+        company::en::{Buzzword, CatchPhrase},
         internet::en::SafeEmail,
         lorem::en::Paragraph,
         name::en::Name,
     },
-    Fake,
 };
 use lettre::{
-    address::Envelope,
-    message::{header::ContentType, Attachment, MultiPart, SinglePart},
-    transport::smtp::response::Response,
     Address, AsyncSmtpTransport, AsyncTransport, Message, SmtpTransport, Tokio1Executor, Transport,
+    address::Envelope,
+    message::{Attachment, MultiPart, SinglePart, header::ContentType},
+    transport::smtp::response::Response,
 };
 use reqwest::Client;
 use std::ffi::OsStr;
-use tokio::time::{sleep, Duration};
+use tokio::time::{Duration, sleep};
 
 use crate::{parse_env_var, run, types::MailMessageMetadata};
 
@@ -47,7 +47,7 @@ async fn send_message(
     let builder = Message::builder()
         .from(format!("{from_name} <{from}>",).parse()?)
         .to(format!("{to_name} <{to}>").parse()?)
-        .subject(CatchPhase().fake::<String>());
+        .subject(CatchPhrase().fake::<String>());
 
     let mut multipart = MultiPart::mixed().build();
 

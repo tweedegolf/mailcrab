@@ -2,11 +2,11 @@ use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair};
 use std::{io::BufReader, sync::Arc};
 use tokio::fs;
 use tokio_rustls::{
+    TlsAcceptor,
     rustls::{
         self,
         pki_types::{CertificateDer, PrivateKeyDer, PrivatePkcs8KeyDer},
     },
-    TlsAcceptor,
 };
 use tracing::info;
 

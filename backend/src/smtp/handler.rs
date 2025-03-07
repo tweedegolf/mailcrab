@@ -3,9 +3,9 @@ use tokio::sync::broadcast::Sender;
 use tracing::{error, info};
 
 use crate::{
+    VERSION,
     error::{Error, Result},
     types::MailMessage,
-    VERSION,
 };
 
 #[derive(Clone, Debug)]

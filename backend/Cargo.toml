@@ -37,4 +37,5 @@ lettre = { version = "0.11", default-features = false, features=[
 fake = { version = "4.0", features=["derive"]}
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 local-ip-address = "0.6"
-futures = "0.3"
+futures = "0.3.29"
+rand = "0.9"

@@ -26,7 +26,7 @@ replicaCount: 1
 
 image:
   # -- Image to use for the deployment.
-  repository: marlonb/mailcrab
+  repository: docker.io/marlonb/mailcrab
   # -- Specify an imagePullPolicy, defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   pullPolicy: Always
   # -- Overrides the image tag whose default is the chart appVersion.

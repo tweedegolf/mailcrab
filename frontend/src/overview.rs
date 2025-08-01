@@ -136,7 +136,7 @@ impl Component for Overview {
 
     fn rendered(&mut self, _ctx: &Context<Self>, _first_render: bool) {
         let count = self.messages.iter().filter(|m| !m.opened).count();
-        gloo_utils::document().set_title(&format!("MailCrab ({})", count));
+        gloo_utils::document().set_title(&format!("MailCrab ({count})"));
     }
 
     fn view(&self, ctx: &Context<Self>) -> Html {

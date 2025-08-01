@@ -1,4 +1,4 @@
-FROM alpine:3.20
+FROM alpine:3.22
 ARG TARGETARCH
 ENV HTTP_HOST="0.0.0.0"
 WORKDIR /app

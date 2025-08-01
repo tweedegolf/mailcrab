@@ -1,6 +1,6 @@
 [package]
 name = "mailcrab-backend"
-version = "1.6.1"
+version = "1.6.2"
 edition = "2024"
 publish = true
 license = "Apache-2.0 OR MIT"

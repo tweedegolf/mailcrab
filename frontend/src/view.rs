@@ -5,6 +5,8 @@ use crate::{
     plaintext::Plaintext,
     types::{MailMessage, MailMessageMetadata},
 };
+use base64::Engine;
+use base64::engine::general_purpose;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::MouseEvent;
 use yew::{
@@ -48,8 +50,8 @@ pub fn view(props: &ViewMessageProps) -> Html {
         return html! {};
     }
 
-    let raw = base64::decode(&message.raw).unwrap();
-    let raw = String::from_utf8_lossy(&raw);
+    let raw = general_purpose::STANDARD.decode(&message.raw).unwrap();
+    let raw = String::from_utf8_lossy(&raw).into_owned();
 
     let mut tabs = vec![("Raw", Tab::Raw), ("Headers", Tab::Headers)];
 
@@ -119,7 +121,7 @@ pub fn view(props: &ViewMessageProps) -> Html {
               </tbody>
             </table>
           } else if props.active_tab == Tab::Raw {
-            <pre>{&raw}</pre>
+            <pre>{raw}</pre>
           }
         </div>
       </div>

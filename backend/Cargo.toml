@@ -1,6 +1,6 @@
 [package]
 name = "mailcrab-backend"
-version = "1.6.2"
+version = "1.6.3"
 edition = "2024"
 publish = true
 license = "Apache-2.0 OR MIT"
@@ -18,7 +18,7 @@ tokio-util = "0.7"
 tower-http = { version = "0.6", features = ["fs", "trace"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-uuid = { version = "1.2", features = ["v4", "serde"] }
+uuid = { version = "1.19", features = ["v4", "serde"] }
 
 [dev-dependencies]
 lettre = { version = "0.11", default-features = false, features=[
@@ -29,5 +29,5 @@ lettre = { version = "0.11", default-features = false, features=[
     "tokio1-rustls-tls",
     "tokio1"
 ] }
-fake = { version = "4.0", features=["derive"]}
+fake = { version = "4.4", features=["derive"]}
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }

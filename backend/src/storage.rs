@@ -29,31 +29,27 @@ pub(crate) async fn storage(
     while running {
         tokio::select! {
             incoming = storage_rx.recv() => {
-                if let Ok(message) = incoming {
-                    if let Ok(mut storage) = state.storage.write() {
-                        storage.insert(message.id, message);
-                    }
+                if let Ok(message) = incoming && let Ok(mut storage) = state.storage.write() {
+                    storage.insert(message.id, message);
                 }
             },
             _ = retention_interval.tick() => {
-                if state.retention_period > Duration::from_secs(0) {
-                    if let Ok(mut storage) = state.storage.write() {
-                        let remove_before = std::time::SystemTime::now()
-                            .sub(state.retention_period)
-                            .duration_since(SystemTime::UNIX_EPOCH)?
-                            .as_secs() as i64;
+                if state.retention_period > Duration::from_secs(0) && let Ok(mut storage) = state.storage.write() {
+                    let remove_before = std::time::SystemTime::now()
+                        .sub(state.retention_period)
+                        .duration_since(SystemTime::UNIX_EPOCH)?
+                        .as_secs() as i64;
 
-                        storage.retain(|_, mail_message| {
-                            if mail_message.time > remove_before {
-                                true
-                            } else {
-                                info!("Removing old message {} from {}", mail_message.id, mail_message.envelope_from);
+                    storage.retain(|_, mail_message| {
+                        if mail_message.time > remove_before {
+                            true
+                        } else {
+                            info!("Removing old message {} from {}", mail_message.id, mail_message.envelope_from);
 
-                                false
-                            }
+                            false
+                        }
 
-                        });
-                    }
+                    });
                 }
             },
             _ = token.cancelled() => {

@@ -56,12 +56,11 @@ impl WebsocketService {
         // retrieve and parse messages from incoming websocket
         spawn_local(async move {
             while let Some(msg) = read.next().await {
-                if let Ok(websocket::Message::Text(data)) = msg {
-                    if let Ok(message) = serde_json_wasm::from_str::<MailMessageMetadata>(&data) {
-                        if message_sender.send(message).await.is_err() {
-                            error!("Error queuing message");
-                        }
-                    }
+                if let Ok(websocket::Message::Text(data)) = msg
+                    && let Ok(message) = serde_json_wasm::from_str::<MailMessageMetadata>(&data)
+                    && message_sender.send(message).await.is_err()
+                {
+                    error!("Error queuing message");
                 }
             }
         });

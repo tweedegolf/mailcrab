@@ -77,16 +77,12 @@ async fn ws_handler(
                                     storage.clear();
                                     info!("storage cleared");
                                 },
-                                Ok(Action::Open(id)) => if let Ok(mut storage) = state.storage.write() {
-                                    if let Some(message) = storage.get_mut(&id) {
-                                        message.open();
-                                        info!("message {} opened", &id);
-                                    }
+                                Ok(Action::Open(id)) => if let Ok(mut storage) = state.storage.write() && let Some(message) = storage.get_mut(&id) {
+                                    message.open();
+                                    info!("message {} opened", &id);
                                 },
-                                Ok(Action::Remove(id)) => if let Ok(mut storage) = state.storage.write() {
-                                    if storage.remove(&id).is_some() {
-                                        info!("message {} removed", &id);
-                                    }
+                                Ok(Action::Remove(id)) => if let Ok(mut storage) = state.storage.write() && storage.remove(&id).is_some() {
+                                    info!("message {} removed", &id);
                                 },
                                 msg => {
                                     warn!("unknown action {:?}", msg);
@@ -109,7 +105,7 @@ async fn ws_handler(
                         },
                     }
                 }
-            };
+            }
         }
     })
 }
@@ -119,7 +115,8 @@ async fn messages_handler(
     Extension(state): Extension<Arc<AppState>>,
 ) -> Result<Json<Vec<MailMessageMetadata>>, StatusCode> {
     if let Ok(storage) = state.storage.read() {
-        let mut messages = storage.values()
+        let mut messages = storage
+            .values()
             .map(|message| message.clone().into())
             .collect::<Vec<MailMessageMetadata>>();
 

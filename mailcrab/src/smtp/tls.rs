@@ -1,4 +1,5 @@
 use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair};
+use rustls_pki_types::pem::PemObject;
 use std::{io::BufReader, sync::Arc};
 use tokio::fs;
 use tokio_rustls::{
@@ -18,7 +19,7 @@ const KEY_PATH: &str = "key.pem";
 async fn load_certs<'a>() -> Option<Vec<CertificateDer<'a>>> {
     let pem_bytes = fs::read(CERT_PATH).await.ok()?;
     let mut reader = BufReader::new(&pem_bytes[..]);
-    let certs: Vec<_> = rustls_pemfile::certs(&mut reader)
+    let certs: Vec<_> = CertificateDer::pem_reader_iter(&mut reader)
         .filter_map(|c| c.ok().map(|der| CertificateDer::from(der.to_vec())))
         .collect();
 
@@ -37,7 +38,7 @@ async fn load_certs<'a>() -> Option<Vec<CertificateDer<'a>>> {
 async fn load_key<'a>() -> Option<PrivatePkcs8KeyDer<'a>> {
     let pem_bytes = fs::read(KEY_PATH).await.ok()?;
     let mut reader = BufReader::new(&pem_bytes[..]);
-    let der = rustls_pemfile::private_key(&mut reader).ok()??;
+    let der = PrivateKeyDer::from_pem_reader(&mut reader).ok()?;
 
     info!("Loaded key {KEY_PATH}");
 

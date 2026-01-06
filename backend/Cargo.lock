@@ -1006,7 +1006,7 @@ dependencies = [
 
 [[package]]
 name = "mailcrab"
-version = "1.6.3"
+version = "1.6.4"
 dependencies = [
  "base64ct",
  "chrono",
@@ -1026,7 +1026,7 @@ dependencies = [
 
 [[package]]
 name = "mailcrab-backend"
-version = "1.6.3"
+version = "1.6.4"
 dependencies = [
  "axum",
  "fake",

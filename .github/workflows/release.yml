@@ -32,7 +32,7 @@ jobs:
       - run: rustup target add wasm32-unknown-unknown
       - uses: jetli/trunk-action@v0.5.0
         with:
-          version: 'latest'
+          version: "latest"
 
       - uses: actions/cache/restore@v4
         with:
@@ -54,7 +54,7 @@ jobs:
           name: frontend-build-${{ github.ref_name }}
           path: frontend/dist
 
-  build:
+  build-linux:
     name: Binaries for ${{ matrix.name }}
     needs: frontend
     runs-on: ubuntu-24.04
@@ -141,9 +141,61 @@ jobs:
           name: ${{ matrix.platform }}-build-${{ github.ref_name }}
           path: bin/${{ matrix.platform }}
 
+  build-macos:
+    name: Binaries for ${{ matrix.name }}
+    needs: frontend
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - name: aarch64-apple-darwin
+            target: aarch64-apple-darwin
+            os: macos-14
+
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal
+      - run: rustup target add ${{ matrix.target }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-build-${{ github.ref_name }}
+          path: frontend/dist
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            backend/target/
+          key: backend-${{ matrix.name }}-${{ hashFiles('backend/Cargo.toml') }}
+          restore-keys: backend-${{ matrix.name }}-
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }} --manifest-path backend/Cargo.toml
+
+      - name: Copy binaries
+        shell: bash
+        run: |
+          mkdir -p bin
+          src="backend/target/${{ matrix.target }}/release/mailcrab-backend"
+          dst="bin/mailcrab-${{ matrix.name }}-${{ github.ref_name }}"
+          cp "$src" "$dst"
+          shasum -a 256 -b "$dst" > "$dst.sha256"
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: bin/mailcrab-*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   release:
     name: Release
-    needs: build
+    needs: [build-linux, build-macos]
     runs-on: ubuntu-24.04
 
     steps:

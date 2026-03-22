@@ -1,4 +1,4 @@
-name: Build
+name: Build and release
 
 on:
   pull_request:
@@ -6,7 +6,112 @@ on:
   push:
     branches: [ "main" ]
 
+permissions:
+  contents: write
+
 jobs:
+  check-version:
+    name: Check version
+    runs-on: ubuntu-24.04
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+      release_exists: ${{ steps.release_check.outputs.release_exists }}
+      should_release: ${{ steps.decide.outputs.should_release }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version
+        id: version
+        shell: bash
+        run: |
+          read_version() {
+            awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' "$1"
+          }
+
+          mailcrab_version=$(read_version mailcrab/Cargo.toml)
+          backend_version=$(read_version backend/Cargo.toml)
+          frontend_version=$(read_version frontend/Cargo.toml)
+
+          if [[ "$mailcrab_version" != "$backend_version" || "$mailcrab_version" != "$frontend_version" ]]; then
+            echo "Cargo package versions must stay in sync" >&2
+            echo "mailcrab/Cargo.toml: $mailcrab_version" >&2
+            echo "backend/Cargo.toml: $backend_version" >&2
+            echo "frontend/Cargo.toml: $frontend_version" >&2
+            exit 1
+          fi
+
+          echo "version=$mailcrab_version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$mailcrab_version" >> "$GITHUB_OUTPUT"
+
+      - name: Check release existence
+        id: release_check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tag = '${{ steps.version.outputs.tag }}';
+
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              core.setOutput('release_exists', 'true');
+            } catch (error) {
+              if (error.status === 404) {
+                core.setOutput('release_exists', 'false');
+              } else {
+                throw error;
+              }
+            }
+
+      - name: Check tag state
+        id: tag_check
+        shell: bash
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/$TAG_NAME" >/dev/null; then
+            tag_commit=$(git rev-list -n 1 "$TAG_NAME")
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+            if [[ "$tag_commit" == "$GITHUB_SHA" ]]; then
+              echo "tag_matches_head=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "tag_matches_head=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+            echo "tag_matches_head=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Decide release
+        id: decide
+        shell: bash
+        env:
+          RELEASE_EXISTS: ${{ steps.release_check.outputs.release_exists }}
+          TAG_EXISTS: ${{ steps.tag_check.outputs.tag_exists }}
+          TAG_MATCHES_HEAD: ${{ steps.tag_check.outputs.tag_matches_head }}
+        run: |
+          should_release=false
+
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; then
+            if [[ "$RELEASE_EXISTS" == "true" ]]; then
+              should_release=false
+            elif [[ "$TAG_EXISTS" == "false" || "$TAG_MATCHES_HEAD" == "true" ]]; then
+              should_release=true
+            else
+              echo "${{ steps.version.outputs.tag }} exists on a different commit and has no release" >&2
+              exit 1
+            fi
+          fi
+
+          echo "should_release=$should_release" >> "$GITHUB_OUTPUT"
+
   frontend:
     name: Build frontend assets
     runs-on: ubuntu-24.04
@@ -36,64 +141,60 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: frontend-build-${{ github.sha }}
+          name: frontend-build
           path: frontend/dist
 
   build:
     name: Binaries for ${{ matrix.name }}
-    needs: frontend
+    needs:
+      - check-version
+      - frontend
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        name:
-          - linux-x86-64-gnu
-          - linux-armv7-gnu
-          - linux-arm64-gnu
-          - linux-x86-64-musl
-          - linux-arm64-musl
-          - osx-arm64
         include:
           - name: linux-x86-64-gnu
             target: x86_64-unknown-linux-gnu
             os: ubuntu-24.04
-            platform: ~
+            artifact: mailcrab-linux-x86-64-gnu
 
           - name: linux-armv7-gnu
             target: armv7-unknown-linux-gnueabihf
             os: ubuntu-24.04
-            platform: ~
+            artifact: mailcrab-linux-armv7-gnu
 
           - name: linux-arm64-gnu
             target: aarch64-unknown-linux-gnu
             os: ubuntu-24.04
-            platform: ~
+            artifact: mailcrab-linux-arm64-gnu
 
           - name: linux-x86-64-musl
             target: x86_64-unknown-linux-musl
             os: ubuntu-24.04
-            platform: amd64
+            artifact: mailcrab-linux-x86-64-musl
 
           - name: linux-arm64-musl
             target: aarch64-unknown-linux-musl
             os: ubuntu-24.04
-            platform: arm64
+            artifact: mailcrab-linux-arm64-musl
 
           - name: osx-arm64
             target: aarch64-apple-darwin
             os: macos-latest
-            platform: ~
+            artifact: mailcrab-osx-arm64
 
     steps:
       - uses: actions/checkout@v4
       - run: rustup toolchain install stable --profile minimal
+
       - name: Add Rust target
         if: ${{ runner.os == 'macOS' }}
         run: rustup target add ${{ matrix.target }}
 
       - uses: actions/download-artifact@v4
         with:
-          name: frontend-build-${{ github.sha }}
+          name: frontend-build
           path: frontend/dist
 
       - uses: actions/cache@v4
@@ -117,3 +218,152 @@ jobs:
       - name: Cargo build
         if: ${{ runner.os == 'macOS' }}
         run: cargo build --release --locked --target ${{ matrix.target }} --manifest-path backend/Cargo.toml
+
+      - name: Package binary
+        if: ${{ needs.check-version.outputs.should_release == 'true' }}
+        shell: bash
+        run: |
+          mkdir -p bin
+          cp backend/target/${{ matrix.target }}/release/mailcrab-backend bin/${{ matrix.artifact }}
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ needs.check-version.outputs.should_release == 'true' }}
+        with:
+          name: ${{ matrix.artifact }}
+          path: bin/${{ matrix.artifact }}
+
+  publish-crates:
+    name: Publish crates.io packages
+    needs:
+      - check-version
+      - build
+    if: ${{ needs.check-version.outputs.should_release == 'true' }}
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: rustup toolchain install stable --profile minimal
+
+      - name: Authenticate with crates.io
+        id: crates_io_auth
+        uses: rust-lang/crates-io-auth-action@v1
+
+      - name: Publish crates
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates_io_auth.outputs.token }}
+        run: cargo publish --locked --manifest-path mailcrab/Cargo.toml
+
+  docker:
+    name: Docker image
+    needs:
+      - check-version
+      - build
+      - publish-crates
+    if: ${{ needs.check-version.outputs.should_release == 'true' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup docker buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Login to dockerhub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_HUB_USERNAME }}
+          password: ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mailcrab-linux-x86-64-musl
+          path: bin
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mailcrab-linux-arm64-musl
+          path: bin
+
+      - name: Prepare docker binaries
+        shell: bash
+        run: |
+          mv bin/mailcrab-linux-x86-64-musl bin/amd64
+          mv bin/mailcrab-linux-arm64-musl bin/arm64
+
+      - name: Build docker image
+        run: docker buildx build --push --platform=linux/amd64,linux/arm64 . -t marlonb/mailcrab:latest -t marlonb/mailcrab:${{ needs.check-version.outputs.tag }}
+
+  release:
+    name: GitHub release
+    needs:
+      - check-version
+      - build
+      - publish-crates
+      - docker
+    if: ${{ needs.check-version.outputs.should_release == 'true' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mailcrab-linux-x86-64-gnu
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mailcrab-linux-armv7-gnu
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mailcrab-linux-arm64-gnu
+          path: dist
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: mailcrab-osx-arm64
+          path: dist
+
+      - name: Prepare release files
+        shell: bash
+        env:
+          TAG_NAME: ${{ needs.check-version.outputs.tag }}
+        run: |
+          mkdir -p release
+
+          for name in \
+            linux-x86-64-gnu \
+            linux-armv7-gnu \
+            linux-arm64-gnu \
+            osx-arm64
+          do
+            src="dist/mailcrab-$name"
+            dst="release/mailcrab-$name-$TAG_NAME"
+            cp "$src" "$dst"
+            sha256sum -b "$dst" > "$dst.sha256"
+          done
+
+      - name: Create release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ needs.check-version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          draft: true
+          append_body: true
+          body: |
+            Docker releases: https://hub.docker.com/repository/docker/marlonb/mailcrab/tags
+            Run docker image using: `docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:${{ needs.check-version.outputs.tag }}`
+          files: |
+            release/mailcrab-linux-x86-64-gnu-${{ needs.check-version.outputs.tag }}
+            release/mailcrab-linux-x86-64-gnu-${{ needs.check-version.outputs.tag }}.sha256
+            release/mailcrab-linux-armv7-gnu-${{ needs.check-version.outputs.tag }}
+            release/mailcrab-linux-armv7-gnu-${{ needs.check-version.outputs.tag }}.sha256
+            release/mailcrab-linux-arm64-gnu-${{ needs.check-version.outputs.tag }}
+            release/mailcrab-linux-arm64-gnu-${{ needs.check-version.outputs.tag }}.sha256
+            release/mailcrab-osx-arm64-${{ needs.check-version.outputs.tag }}
+            release/mailcrab-osx-arm64-${{ needs.check-version.outputs.tag }}.sha256

@@ -21,7 +21,7 @@ pub enum Action {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AttachmentMetadata {
-    filename: String,
+    pub filename: String,
     mime: String,
     size: String,
 }
@@ -144,7 +144,7 @@ pub struct MailMessage {
     headers: HashMap<String, String>,
     text: String,
     html: String,
-    attachments: Vec<Attachment>,
+    pub attachments: Vec<Attachment>,
     raw: String,
     pub envelope_from: String,
     pub envelope_recipients: Vec<String>,
@@ -153,6 +153,12 @@ pub struct MailMessage {
 impl MailMessage {
     pub fn open(&mut self) {
         self.opened = true;
+    }
+
+    pub fn attachment_content(&self, index: usize) -> Option<(String, Vec<u8>)> {
+        let a = self.attachments.get(index)?;
+        let bytes = base64ct::Base64::decode_vec(&a.content).ok()?;
+        Some((a.mime.clone(), bytes))
     }
 
     pub fn render(&self) -> String {

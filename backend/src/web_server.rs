@@ -150,7 +150,7 @@ async fn message_body_handler(
 ) -> Result<Html<String>, StatusCode> {
     if let Ok(storage) = state.storage.read() {
         match storage.get(&id) {
-            Some(message) => Ok(Html(message.render())),
+            Some(message) => Ok(Html(message.render(&state.prefix))),
             _ => Err(StatusCode::NOT_FOUND),
         }
     } else {
@@ -215,6 +215,24 @@ async fn attachment_handler(
         .unwrap())
 }
 
+/// return the raw message (plain/text)
+async fn message_raw_handler(
+    Path(id): Path<Uuid>,
+    Extension(state): Extension<Arc<AppState>>,
+) -> Result<Response, StatusCode> {
+    let storage = state.storage.read()
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let message = storage.get(&id)
+        .ok_or(StatusCode::NOT_FOUND)?;
+    let bytes = message.raw_bytes()
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Response::builder()
+        .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
+        .body(Body::from(bytes))
+        .unwrap())
+}
+
 async fn not_found() -> Response {
     Response::builder()
         .status(StatusCode::NOT_FOUND)
@@ -265,6 +283,7 @@ pub async fn web_server(
         .route("/api/delete-all", post(message_delete_all_handler))
         .route("/api/version", get(version_handler))
         .route("/api/message/{id}/attachment/{index}", get(attachment_handler))
+        .route("/api/message/{id}/raw", get(message_raw_handler))
         .nest_service("/static", get(static_handler))
         .layer(
             TraceLayer::new_for_http()

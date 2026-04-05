@@ -1,12 +1,10 @@
 use crate::{
-    api::fetch_message,
+    api::{fetch_message, fetch_raw},
     formatted::Formatted,
     overview::Tab,
     plaintext::Plaintext,
     types::{MailMessage, MailMessageMetadata},
 };
-use base64::Engine;
-use base64::engine::general_purpose;
 use wasm_bindgen_futures::spawn_local;
 use web_sys::MouseEvent;
 use yew::{
@@ -25,14 +23,18 @@ pub struct ViewMessageProps {
 #[function_component(ViewMessage)]
 pub fn view(props: &ViewMessageProps) -> Html {
     let message: UseStateHandle<MailMessage> = use_state(Default::default);
+    let raw_content: UseStateHandle<Option<String>> = use_state(|| None);
 
     // fetch message details
     let id = props.message.id.clone();
     let set_tab = props.set_tab.clone();
     let inner_message = message.clone();
     let current_tab = props.active_tab.clone();
-    use_effect_with(id, |message_id| {
+    let raw_content_reset = raw_content.clone();
+
+    use_effect_with(id, move |message_id| {
         let message_id = message_id.clone();
+        raw_content_reset.set(None);
         spawn_local(async move {
             let message = fetch_message(&message_id).await;
             if message.html.is_empty() && current_tab == Tab::Formatted {
@@ -46,12 +48,26 @@ pub fn view(props: &ViewMessageProps) -> Html {
         || ()
     });
 
+    {
+        let id = props.message.id.clone();
+        let raw_content = raw_content.clone();
+        let tab = props.active_tab.clone();
+
+        use_effect_with((id, tab), move |(id, tab)| {
+            if *tab == Tab::Raw {
+                let id = id.clone();
+                let raw_content = raw_content.clone();
+                spawn_local(async move {
+                    raw_content.set(Some(fetch_raw(&id).await));
+                });
+            }
+            || ()
+        });
+    }
+
     if message.id.is_empty() {
         return html! {};
     }
-
-    let raw = general_purpose::STANDARD.decode(&message.raw).unwrap();
-    let raw = String::from_utf8_lossy(&raw).into_owned();
 
     let mut tabs = vec![("Raw", Tab::Raw), ("Headers", Tab::Headers)];
 
@@ -121,7 +137,7 @@ pub fn view(props: &ViewMessageProps) -> Html {
               </tbody>
             </table>
           } else if props.active_tab == Tab::Raw {
-            <pre>{raw}</pre>
+            <pre>{(*raw_content).clone().unwrap_or_default()}</pre>
           }
         </div>
       </div>

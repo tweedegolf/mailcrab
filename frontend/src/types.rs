@@ -35,7 +35,7 @@ pub struct Attachment {
     pub content_id: Option<String>,
     pub mime: String,
     pub size: String,
-    pub content: String,
+//  pub content: String,
 }
 
 #[derive(Clone, PartialEq, Eq, Deserialize, Default)]
@@ -51,7 +51,7 @@ pub struct MailMessage {
     pub text: String,
     pub html: String,
     pub attachments: Vec<Attachment>,
-    pub raw: String,
+//  pub raw: String,
     pub headers: HashMap<String, String>,
     pub envelope_from: String,
     pub envelope_recipients: Vec<String>,

@@ -207,3 +207,78 @@ async fn send_sample_messages() {
         mailer.send_raw(&envelope, email.as_bytes()).unwrap();
     }
 }
+
+async fn send_large_file(size_bytes: usize) -> Result<Response, Box<dyn std::error::Error>> {
+    let smtp_port: u16 = parse_env_var("SMTP_PORT", 1025);
+    let mailer = AsyncSmtpTransport::<Tokio1Executor>::builder_dangerous("127.0.0.1".to_string())
+        .port(smtp_port)
+        .build();
+
+    // generates pseudo-random bytes without any added dependencies
+    let body: Vec<u8> = (0..size_bytes).map(|i| (i % 251) as u8).collect();
+
+    let email = Message::builder()
+        .from("sender@example.com".parse()?)
+        .to("recipient@example.com".parse()?)
+        .subject(format!("Large attachment test ({size_bytes} bytes)"))
+        .multipart(
+            MultiPart::mixed()
+                .singlepart(SinglePart::plain("See attached.".to_owned()))
+                .singlepart(
+                    Attachment::new("large.bin".to_owned())
+                        .body(body, ContentType::parse("application/octet-stream")?),
+                ),
+        )?;
+
+    Ok(mailer.send(email).await?)
+}
+
+#[tokio::test]
+async fn receive_large_attachment() {
+    const SIZE: usize = 75 * 1024 * 1024; // 75 MiB
+
+    let join = tokio::task::spawn(run());
+
+    for _ in 0..60 {
+        if get_messages_metadata().await.is_ok() { break; }
+        sleep(Duration::from_millis(100)).await;
+    }
+
+    send_large_file(SIZE).await.expect("send failed");
+
+    // give storage a moment to process it, magic number
+    sleep(Duration::from_millis(220)).await;
+
+    let messages = get_messages_metadata().await.unwrap();
+    let meta = messages.last().expect("no message received");
+
+    assert_eq!(meta.attachments.len(), 1);
+    assert_eq!(meta.attachments[0].filename, "large.bin");
+
+    // fetch the full message and hit the new attachment URL
+    let http_port: u16 = parse_env_var("HTTP_PORT", 1080);
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .unwrap();
+
+    let attachment_bytes = client
+        .get(format!(
+            "http://127.0.0.1:{http_port}/api/message/{}/attachment/0",
+            meta.id
+        ))
+        .send()
+        .await
+        .expect("attachment request failed")
+        .bytes()
+        .await
+        .expect("reading body failed");
+
+    assert_eq!(attachment_bytes.len(), SIZE);
+
+    // verify content matches
+    let expected: Vec<u8> = (0..SIZE).map(|i| (i % 251) as u8).collect();
+    assert_eq!(attachment_bytes.as_ref(), expected.as_slice());
+
+    join.abort();
+}

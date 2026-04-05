@@ -1,4 +1,4 @@
-use crate::{dark_mode::toggle_body_invert, types::MailMessage};
+use crate::{api::get_api_path, dark_mode::toggle_body_invert, types::MailMessage};
 use yew::{Callback, Html, Properties, function_component, html, html_nested};
 
 #[derive(Properties, Eq, PartialEq)]
@@ -51,30 +51,31 @@ pub fn view(props: &MessageHeaderProps) -> Html {
               <td>{&message.subject}</td>
             </tr>
             <tr>
-            <th>
-              if message.envelope_recipients.len() > 1 {
-                {"Recipients: "}
-              } else {
-                {"Recipient: "}
-              }
-            </th>
-            <td>
-              <span class="recipients">
-                {for message.envelope_recipients.clone().into_iter().map(|addr| html_nested! {
-                  <span class="email">{addr}</span>
-                })}
-              </span>
-            </td>
-          </tr>
+              <th>
+                if message.envelope_recipients.len() > 1 {
+                  {"Recipients: "}
+                } else {
+                  {"Recipient: "}
+                }
+              </th>
+              <td>
+                <span class="recipients">
+                  {for message.envelope_recipients.clone().into_iter().map(|addr| html_nested! {
+                    <span class="email">{addr}</span>
+                  })}
+                </span>
+              </td>
+            </tr>
           </tbody>
         </table>
         <div class="actions">
-          {message.attachments.iter().map(|a| {
+          {message.attachments.iter().enumerate().map(|(index, a)| {
+            let url = get_api_path(&format!("message/{}/attachment/{}", message.id, index));
             html! {
               <a
-                href={format!("data:{};base64,{}", &a.mime, &a.content)}
+                href={url}
                 download={a.filename.clone()}
-                class={&a.mime.replace('/', "-")}
+                class={a.mime.replace('/', "-")}
               >
                 {&a.filename}
                 <span class="size">{&a.size}</span>
@@ -84,7 +85,7 @@ pub fn view(props: &MessageHeaderProps) -> Html {
           <button class="invert-body" onclick={Callback::from(|_| {
             toggle_body_invert();
           })}>
-              {"Invert body"}
+            {"Invert body"}
           </button>
         </div>
       </>

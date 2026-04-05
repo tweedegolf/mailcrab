@@ -21,7 +21,7 @@ pub enum Action {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AttachmentMetadata {
-    filename: String,
+    pub filename: String,
     mime: String,
     size: String,
 }
@@ -92,6 +92,7 @@ pub struct Attachment {
     content_id: Option<String>,
     mime: String,
     size: String,
+    #[serde(skip)]
     content: String,
 }
 
@@ -144,7 +145,8 @@ pub struct MailMessage {
     headers: HashMap<String, String>,
     text: String,
     html: String,
-    attachments: Vec<Attachment>,
+    pub attachments: Vec<Attachment>,
+    #[serde(skip)]
     raw: String,
     pub envelope_from: String,
     pub envelope_recipients: Vec<String>,
@@ -155,28 +157,33 @@ impl MailMessage {
         self.opened = true;
     }
 
-    pub fn render(&self) -> String {
+    pub fn raw_bytes(&self) -> Option<Vec<u8>> {
+        base64ct::Base64::decode_vec(&self.raw).ok()
+    }
+
+    pub fn attachment_content(&self, index: usize) -> Option<(String, Vec<u8>)> {
+        let a = self.attachments.get(index)?;
+        let bytes = base64ct::Base64::decode_vec(&a.content).ok()?;
+        Some((a.mime.clone(), bytes))
+    }
+
+    pub fn render(&self, prefix: &str) -> String {
         if self.html.is_empty() {
-            self.text.clone()
-        } else {
-            let mut html = self.html.clone();
-
-            for attachement in &self.attachments {
-                if let Some(content_id) = &attachement.content_id {
-                    let from = format!("cid:{}", content_id.trim_start_matches("cid:"));
-                    let encoded: String = attachement
-                        .content
-                        .chars()
-                        .filter(|c| !c.is_whitespace())
-                        .collect();
-                    let to = format!("data:{};base64,{}", attachement.mime, encoded);
-
-                    html = html.replace(&from, &to);
-                }
-            }
-
-            html
+            return self.text.clone();
         }
+
+        let prefix = if prefix == "/" { "" } else { prefix };
+        let mut html = self.html.clone();
+
+        for (index, attachment) in self.attachments.iter().enumerate() {
+            if let Some(content_id) = &attachment.content_id {
+                let cid = format!("cid:{}", content_id.trim_start_matches("cid:"));
+                let url = format!("{}/api/message/{}/attachment/{}", prefix, self.id, index);
+                html = html.replace(&cid, &url);
+            }
+        }
+
+        html
     }
 }
 

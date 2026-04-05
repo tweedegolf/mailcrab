@@ -41,3 +41,15 @@ pub async fn fetch_message(id: &str) -> MailMessage {
         .await
         .unwrap()
 }
+
+pub async fn fetch_raw(id: &str) -> String {
+    let url = get_api_path(&format!("message/{}/raw", id));
+
+    Request::get(&url)
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap()
+}

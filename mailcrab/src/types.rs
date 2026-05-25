@@ -161,10 +161,10 @@ impl MailMessage {
         base64ct::Base64::decode_vec(&self.raw).ok()
     }
 
-    pub fn attachment_content(&self, index: usize) -> Option<(String, Vec<u8>)> {
+    pub fn attachment_content(&self, index: usize) -> Option<(String, String, Vec<u8>)> {
         let a = self.attachments.get(index)?;
         let bytes = base64ct::Base64::decode_vec(&a.content).ok()?;
-        Some((a.mime.clone(), bytes))
+        Some((a.filename.clone(), a.mime.clone(), bytes))
     }
 
     pub fn render(&self, prefix: &str) -> String {
@@ -172,7 +172,7 @@ impl MailMessage {
             return self.text.clone();
         }
 
-        let prefix = if prefix == "/" { "" } else { prefix };
+        let prefix = prefix.trim_end_matches('/');
         let mut html = self.html.clone();
 
         for (index, attachment) in self.attachments.iter().enumerate() {

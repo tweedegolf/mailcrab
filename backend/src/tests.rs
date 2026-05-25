@@ -240,16 +240,28 @@ async fn receive_large_attachment() {
     let join = tokio::task::spawn(run());
 
     for _ in 0..60 {
-        if get_messages_metadata().await.is_ok() { break; }
+        if get_messages_metadata().await.is_ok() {
+            break;
+        }
         sleep(Duration::from_millis(100)).await;
     }
 
+    let messages_before = get_messages_metadata().await.unwrap().len();
+
     send_large_file(SIZE).await.expect("send failed");
 
-    // give storage a moment to process it, magic number
-    sleep(Duration::from_millis(220)).await;
-
-    let messages = get_messages_metadata().await.unwrap();
+    let mut messages = Vec::new();
+    for _ in 0..100 {
+        messages = get_messages_metadata().await.unwrap();
+        if messages.len() > messages_before {
+            break;
+        }
+        sleep(Duration::from_millis(50)).await;
+    }
+    assert!(
+        messages.len() > messages_before,
+        "no message received within timeout"
+    );
     let meta = messages.last().expect("no message received");
 
     assert_eq!(meta.attachments.len(), 1);

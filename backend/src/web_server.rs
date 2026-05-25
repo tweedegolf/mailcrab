@@ -204,13 +204,23 @@ async fn attachment_handler(
     Path((id, index)): Path<(Uuid, usize)>,
     Extension(state): Extension<Arc<AppState>>,
 ) -> Result<Response, StatusCode> {
-    let storage = state.storage.read()
+    let storage = state
+        .storage
+        .read()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let message = storage.get(&id)
+    let message = storage.get(&id).ok_or(StatusCode::NOT_FOUND)?;
+    let (filename, mime, bytes) = message
+        .attachment_content(index)
         .ok_or(StatusCode::NOT_FOUND)?;
-    let (mime, bytes) = message.attachment_content(index).ok_or(StatusCode::NOT_FOUND)?;
+    let disposition = format!(
+        "attachment; filename=\"{}\"",
+        filename.replace('\\', "\\\\").replace('"', "\\\"")
+    );
+    let len = bytes.len();
     Ok(Response::builder()
         .header(header::CONTENT_TYPE, mime)
+        .header(header::CONTENT_LENGTH, len)
+        .header(header::CONTENT_DISPOSITION, disposition)
         .body(Body::from(bytes))
         .unwrap())
 }
@@ -220,15 +230,16 @@ async fn message_raw_handler(
     Path(id): Path<Uuid>,
     Extension(state): Extension<Arc<AppState>>,
 ) -> Result<Response, StatusCode> {
-    let storage = state.storage.read()
+    let storage = state
+        .storage
+        .read()
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let message = storage.get(&id)
-        .ok_or(StatusCode::NOT_FOUND)?;
-    let bytes = message.raw_bytes()
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
-
+    let message = storage.get(&id).ok_or(StatusCode::NOT_FOUND)?;
+    let bytes = message.raw_bytes().unwrap_or_default();
+    let len = bytes.len();
     Ok(Response::builder()
         .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
+        .header(header::CONTENT_LENGTH, len)
         .body(Body::from(bytes))
         .unwrap())
 }
@@ -282,7 +293,10 @@ pub async fn web_server(
         .route("/api/delete/{id}", post(message_delete_handler))
         .route("/api/delete-all", post(message_delete_all_handler))
         .route("/api/version", get(version_handler))
-        .route("/api/message/{id}/attachment/{index}", get(attachment_handler))
+        .route(
+            "/api/message/{id}/attachment/{index}",
+            get(attachment_handler),
+        )
         .route("/api/message/{id}/raw", get(message_raw_handler))
         .nest_service("/static", get(static_handler))
         .layer(

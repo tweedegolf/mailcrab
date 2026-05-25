@@ -54,7 +54,7 @@ pub fn view(props: &ViewMessageProps) -> Html {
         let tab = props.active_tab.clone();
 
         use_effect_with((id, tab), move |(id, tab)| {
-            if *tab == Tab::Raw {
+            if *tab == Tab::Raw && raw_content.is_none() {
                 let id = id.clone();
                 let raw_content = raw_content.clone();
                 spawn_local(async move {

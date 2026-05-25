@@ -24,7 +24,7 @@ pub async fn fetch_messages_metadata() -> Vec<MailMessageMetadata> {
         .await
         .unwrap();
 
-    messages.sort_by(|a, b| a.time.cmp(&b.time));
+    messages.sort_by_key(|a| a.time);
 
     messages
 }
@@ -40,4 +40,18 @@ pub async fn fetch_message(id: &str) -> MailMessage {
         .json()
         .await
         .unwrap()
+}
+
+pub async fn fetch_raw(id: &str) -> String {
+    let url = get_api_path(&format!("message/{}/raw", id));
+
+    let response = match Request::get(&url).send().await {
+        Ok(r) => r,
+        Err(e) => return format!("Failed to load raw message: {e}"),
+    };
+
+    response
+        .text()
+        .await
+        .unwrap_or_else(|e| format!("Failed to read raw message: {e}"))
 }

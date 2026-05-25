@@ -165,7 +165,7 @@ curl -k --ssl-reqd smtps://127.0.0.1:1025 --mail-from myself@example.com --mail-
 
 ## Development
 
-Install [Rust](https://www.rust-lang.org/learn/get-started) and [Trunk](https://trunkrs.dev/)
+Install [Rust](https://www.rust-lang.org/learn/get-started) and [Trunk](https://trunk-rs.github.io/trunk/)
 
 ```sh
 # Add wasm as target if it it not present after following the install instructions for Trunk

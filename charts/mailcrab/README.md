@@ -23,6 +23,7 @@ A Helm chart for deploying MailCrab in Kubernetes.
 | nameOverride | string | `""` | Configure the name override for resources. |
 | podAnnotations | object | `{}` | Configure annotations to be required by the pods to run the application. |
 | podSecurityContext | object | `{}` | Configure the pod security context. |
+| priorityClassName | string | `""` |  |
 | replicaCount | int | `1` | Configure the number of replicas to run. |
 | resources | object | `{}` | Enable autoscaling for the deployment. |
 | securityContext | object | `{}` | Configure the security context for the container. |

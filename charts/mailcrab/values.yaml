@@ -65,6 +65,10 @@ securityContext: {}
   # runAsNonRoot: true
   # runAsUser: 1000
 
+# Name of an existing PriorityClass to assign, defining the importance of the pods compared to other pods in the cluster.
+# Ref: https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/
+priorityClassName: ""
+
 service:
   # -- The type of service to create.
   type: ClusterIP

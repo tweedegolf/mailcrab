@@ -49,6 +49,9 @@ serviceAccount:
   # -- The name of the service account to use. If not set and create is true, a name is generated using the fullname template
   name: ""
 
+# -- Configure additional labels to be required by the pods to run the application.
+podLabels: {}
+
 # -- Configure annotations to be required by the pods to run the application.
 podAnnotations: {}
 

@@ -21,6 +21,7 @@ A Helm chart for deploying MailCrab in Kubernetes.
 | ingress.hosts[0].paths[0].pathType | string | `"ImplementationSpecific"` |  |
 | ingress.tls | list | `[]` | TLS configuration for ingress |
 | nameOverride | string | `""` | Configure the name override for resources. |
+| podLabels | object | `{}` | Configure additional labels to be required by the pods to run the application. |
 | podAnnotations | object | `{}` | Configure annotations to be required by the pods to run the application. |
 | podSecurityContext | object | `{}` | Configure the pod security context. |
 | replicaCount | int | `1` | Configure the number of replicas to run. |

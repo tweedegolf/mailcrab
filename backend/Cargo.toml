@@ -7,8 +7,15 @@ license = "Apache-2.0 OR MIT"
 repository = "https://github.com/tweedegolf/mailcrab"
 description = "Email test server for development, written in Rust"
 
+[features]
+default = []
+imap = ["dep:chrono", "dep:imap-next", "dep:mail-parser"]
+
 [dependencies]
 axum = { version = "0.8", features = ["ws"] }
+chrono = { version = "0.4", optional = true }
+imap-next = { version = "0.3.4", features = ["ext_id"], optional = true }
+mail-parser = { version = "0.11", optional = true }
 mailcrab = { path = "../mailcrab" }
 rust-embed = "8.12"
 serde = { version = "1.0", features = ["derive"] }

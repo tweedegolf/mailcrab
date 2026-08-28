@@ -162,6 +162,14 @@ impl MailMessage {
         self.opened = true;
     }
 
+    pub fn is_opened(&self) -> bool {
+        self.opened
+    }
+
+    pub fn set_opened(&mut self, opened: bool) {
+        self.opened = opened;
+    }
+
     pub fn raw_bytes(&self) -> Option<Vec<u8>> {
         base64ct::Base64::decode_vec(&self.raw).ok()
     }

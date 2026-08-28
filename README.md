@@ -18,6 +18,7 @@ docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
 
 - Accept-all SMTP server
 - Web interface to view and inspect all incoming email
+- Optional IMAP server to read the mailbox from a regular mail client
 - View formatted mail, download attachments, view headers or the complete raw mail contents
 - Single binary
 - Runs on all `amd64` and `arm64` platforms using docker
@@ -93,6 +94,23 @@ docker run --rm --env MAILCRAB_PREFIX=emails -p 1080:1080 -p 1025:1025 marlonb/m
 ```
 
 The web interface will also be served at [http://localhost:1080/emails/](http://localhost:1080/emails/)
+
+### IMAP
+
+When MailCrab is compiled with the `imap` feature, it also serves all received messages over IMAP as a
+single `INBOX`, so you can read them from a regular mail client like Thunderbird:
+
+```sh
+cargo run --features imap
+```
+
+The IMAP server listens on port 1143 by default, configurable with the `IMAP_PORT` and `IMAP_HOST`
+environment variables. Any username and password combination is accepted, the connection is unencrypted
+(select "no encryption" / "plain connection" in your mail client) - like the rest of MailCrab it is a
+development tool, not suitable for production use.
+
+Messages deleted in the mail client are deleted from MailCrab; a message read over IMAP is marked as
+read in the web interface, and vice versa.
 
 ### Reverse proxy
 

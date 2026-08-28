@@ -213,6 +213,190 @@ async fn functional() {
     join.abort();
 }
 
+#[cfg(feature = "imap")]
+mod imap {
+    use mailcrab::MailMessage;
+    use std::sync::Arc;
+    use tokio::{
+        io::{AsyncBufReadExt, AsyncWriteExt, BufReader},
+        net::TcpStream,
+        time::{Duration, sleep},
+    };
+    use tokio_util::sync::CancellationToken;
+
+    use crate::AppState;
+
+    const IMAP_PORT: u16 = 41143;
+
+    const RAW_MESSAGE: &str = concat!(
+        "Subject: Test message\r\n",
+        "From: Sender <sender@example.com>\r\n",
+        "To: Receiver <receiver@example.com>\r\n",
+        "Date: Sat, 01 Aug 2026 23:20:55 +0200\r\n",
+        "Message-ID: <test-1@example.com>\r\n",
+        "MIME-Version: 1.0\r\n",
+        "Content-Type: multipart/alternative; boundary=test-boundary-123\r\n",
+        "\r\n",
+        "--test-boundary-123\r\n",
+        "Content-Type: text/plain; charset=utf-8\r\n",
+        "\r\n",
+        "Hello world!\r\n",
+        "\r\n",
+        "--test-boundary-123\r\n",
+        "Content-Type: text/html\r\n",
+        "\r\n",
+        "<html><body><p>Hello world!</p></body></html>\r\n",
+        "\r\n",
+        "--test-boundary-123--\r\n",
+    );
+
+    /// send a command and collect all response lines up to and including the
+    /// tagged response
+    async fn command(stream: &mut BufReader<TcpStream>, tag: &str, command: &str) -> Vec<String> {
+        stream
+            .get_mut()
+            .write_all(format!("{tag} {command}\r\n").as_bytes())
+            .await
+            .expect("failed to send command");
+
+        let mut lines = Vec::new();
+
+        loop {
+            let mut line = String::new();
+            stream.read_line(&mut line).await.expect("failed to read");
+            let done = line.starts_with(&format!("{tag} "));
+            lines.push(line);
+
+            if done {
+                return lines;
+            }
+        }
+    }
+
+    fn assert_contains(lines: &[String], needle: &str) {
+        assert!(
+            lines.iter().any(|line| line.contains(needle)),
+            "expected {needle:?} in response: {lines:?}"
+        );
+    }
+
+    #[tokio::test]
+    async fn imap_functional() {
+        let (tx, rx) = tokio::sync::broadcast::channel::<MailMessage>(16);
+        let storage_rx = rx.resubscribe();
+        let state = Arc::new(AppState {
+            rx,
+            storage: Default::default(),
+            prefix: String::new(),
+            index: None,
+            retention_period: Duration::from_secs(0),
+        });
+        let token = CancellationToken::new();
+
+        tokio::spawn(crate::storage::storage(
+            storage_rx,
+            state.clone(),
+            token.clone(),
+        ));
+        tokio::spawn(crate::imap::imap_server(
+            [127, 0, 0, 1].into(),
+            IMAP_PORT,
+            state.clone(),
+            token.clone(),
+        ));
+
+        // deliver a message and wait for the storage task to pick it up
+        let message: MailMessage = mail_parser::MessageParser::default()
+            .parse(RAW_MESSAGE.as_bytes())
+            .expect("failed to parse message")
+            .try_into()
+            .expect("failed to convert message");
+        tx.send(message).expect("failed to queue message");
+
+        for _ in 0..100 {
+            if state.storage.read().map(|s| s.len()).unwrap_or(0) == 1 {
+                break;
+            }
+            sleep(Duration::from_millis(50)).await;
+        }
+        assert_eq!(state.storage.read().unwrap().len(), 1);
+
+        // connect and read the greeting
+        let mut stream = None;
+        for _ in 0..100 {
+            if let Ok(socket) = TcpStream::connect(("127.0.0.1", IMAP_PORT)).await {
+                stream = Some(BufReader::new(socket));
+                break;
+            }
+            sleep(Duration::from_millis(50)).await;
+        }
+        let mut stream = stream.expect("failed to connect to IMAP server");
+
+        let mut greeting = String::new();
+        stream.read_line(&mut greeting).await.unwrap();
+        assert!(greeting.starts_with("* OK"), "greeting: {greeting:?}");
+
+        let lines = command(&mut stream, "a0", "CAPABILITY").await;
+        assert_contains(&lines, "IMAP4REV1");
+        assert_contains(&lines, "a0 OK");
+
+        let lines = command(&mut stream, "a1", "LOGIN test test").await;
+        assert_contains(&lines, "a1 OK");
+
+        let lines = command(&mut stream, "a2", "LIST \"\" \"*\"").await;
+        assert_contains(&lines, "INBOX");
+
+        let lines = command(&mut stream, "a3", "SELECT INBOX").await;
+        assert_contains(&lines, "* 1 EXISTS");
+        assert_contains(&lines, "UIDVALIDITY");
+        assert_contains(&lines, "a3 OK [READ-WRITE");
+
+        let lines = command(
+            &mut stream,
+            "a4",
+            "FETCH 1 (FLAGS UID RFC822.SIZE ENVELOPE BODYSTRUCTURE)",
+        )
+        .await;
+        assert_contains(&lines, "UID 1");
+        assert_contains(&lines, "Test message");
+        assert_contains(&lines, "sender");
+        // the multipart/alternative structure with both body parts
+        assert_contains(&lines, "\"alternative\"");
+        assert_contains(&lines, "\"html\"");
+        assert_contains(&lines, "a4 OK");
+
+        // fetching the full message returns the raw content and marks it seen
+        let lines = command(&mut stream, "a5", "UID FETCH 1 (BODY[])").await;
+        assert_contains(&lines, "Hello world!");
+        assert_contains(&lines, "a5 OK");
+
+        let lines = command(&mut stream, "a6", "FETCH 1 (FLAGS)").await;
+        assert_contains(&lines, "\\Seen");
+
+        let lines = command(&mut stream, "a7", "UID SEARCH UNSEEN").await;
+        assert_contains(&lines, "* SEARCH\r\n");
+
+        // fetch only the plain text part (part 1 of the multipart)
+        let lines = command(&mut stream, "a8", "FETCH 1 (BODY.PEEK[1])").await;
+        assert_contains(&lines, "Hello world!");
+
+        // delete the message
+        let lines = command(&mut stream, "a9", "STORE 1 +FLAGS (\\Deleted)").await;
+        assert_contains(&lines, "\\Deleted");
+
+        let lines = command(&mut stream, "a10", "EXPUNGE").await;
+        assert_contains(&lines, "* 1 EXPUNGE");
+        assert_contains(&lines, "a10 OK");
+
+        assert_eq!(state.storage.read().unwrap().len(), 0);
+
+        let lines = command(&mut stream, "a11", "LOGOUT").await;
+        assert_contains(&lines, "* BYE");
+
+        token.cancel();
+    }
+}
+
 #[tokio::test]
 #[ignore]
 async fn send_sample_messages() {

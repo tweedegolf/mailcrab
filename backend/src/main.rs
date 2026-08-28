@@ -15,6 +15,8 @@ use tracing_subscriber::{prelude::__tracing_subscriber_SubscriberExt, util::Subs
 
 use crate::{storage::storage, web_server::web_server};
 
+#[cfg(feature = "imap")]
+mod imap;
 mod storage;
 mod web_server;
 
@@ -113,7 +115,27 @@ async fn run() -> i32 {
         enable_tls_auth,
         token.clone(),
     ));
-    set.spawn(web_server(http_host, http_port, app_state, token.clone()));
+    set.spawn(web_server(
+        http_host,
+        http_port,
+        app_state.clone(),
+        token.clone(),
+    ));
+
+    #[cfg(feature = "imap")]
+    {
+        let imap_host: IpAddr = parse_env_var("IMAP_HOST", [0, 0, 0, 0].into());
+        let imap_port: u16 = parse_env_var("IMAP_PORT", 1143);
+
+        info!("IMAP server starting on {imap_host}:{imap_port}");
+
+        set.spawn(imap::imap_server(
+            imap_host,
+            imap_port,
+            app_state,
+            token.clone(),
+        ));
+    }
 
     tokio::spawn({
         let abort_token = abort_token.clone();

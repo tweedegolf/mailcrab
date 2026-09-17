@@ -12,6 +12,11 @@ updates:
     # only propose versions that have been released for at least 7 days
     cooldown:
       default-days: 7
+    # one PR for all crates in all directories
+    groups:
+      cargo:
+        patterns:
+          - "*"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -20,6 +25,10 @@ updates:
       cronjob: "0 8 1,15 * *"
     cooldown:
       default-days: 7
+    groups:
+      github-actions:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -28,3 +37,7 @@ updates:
       cronjob: "0 8 1,15 * *"
     cooldown:
       default-days: 7
+    groups:
+      docker:
+        patterns:
+          - "*"

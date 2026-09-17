@@ -9,7 +9,7 @@ use crate::{
     api::fetch_messages_metadata,
     dark_mode::{init_dark_mode, toggle_dark_mode},
     list::MessageList,
-    types::{Action, MailMessageMetadata},
+    types::{Action, Address, MailMessageMetadata},
     view::ViewMessage,
     websocket::WebsocketService,
 };
@@ -234,22 +234,20 @@ impl Overview {
             return self.messages.clone();
         }
 
+        let address_matches = |address: &Address| {
+            [address.name.as_deref(), address.email.as_deref()]
+                .into_iter()
+                .flatten()
+                .any(|value| value.to_lowercase().contains(&query))
+        };
+
         self.messages
             .iter()
             .filter(|m| {
-                m.from
-                    .name
-                    .as_deref()
-                    .unwrap_or("")
-                    .to_lowercase()
-                    .contains(&query)
-                    || m.from
-                        .email
-                        .as_deref()
-                        .unwrap_or("")
-                        .to_lowercase()
-                        .contains(&query)
+                address_matches(&m.from)
+                    || m.to.iter().any(address_matches)
                     || m.subject.to_lowercase().contains(&query)
+                    || m.envelope_from.to_lowercase().contains(&query)
                     || m.envelope_recipients
                         .iter()
                         .any(|r| r.to_lowercase().contains(&query))

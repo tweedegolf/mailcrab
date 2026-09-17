@@ -184,6 +184,36 @@ header {
       border-color: var(--red);
     }
   }
+
+  input.search {
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--border-grey);
+    background: var(--background);
+    color: var(--foreground);
+    font-size: 0.9rem;
+    width: 18rem;
+    min-width: 0;
+    max-width: 100%;
+    margin-right: 0.5rem;
+
+    @media (max-width: 1150px) {
+      width: 12rem;
+    }
+
+    @media (max-width: 1024px) {
+      width: 8rem;
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--red);
+    }
+
+    &::placeholder {
+      color: var(--grey);
+    }
+  }
 }
 
 .main {
@@ -241,6 +271,14 @@ header {
   ul {
     display: flex;
     flex-direction: column-reverse;
+  }
+
+  .no-results {
+    margin: 3rem 0.75rem;
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 200;
+    color: var(--grey);
   }
 
   li {

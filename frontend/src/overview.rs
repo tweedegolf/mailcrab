@@ -1,7 +1,8 @@
 use futures::{StreamExt, channel::mpsc::Sender};
 use gloo_console::error;
+use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::spawn_local;
-use web_sys::NotificationOptions;
+use web_sys::{HtmlInputElement, InputEvent, NotificationOptions};
 use yew::prelude::*;
 
 use crate::{
@@ -21,6 +22,7 @@ pub enum Msg {
     Remove(String),
     Loading(bool),
     RemoveAll,
+    Search(String),
 }
 
 #[derive(Clone, PartialEq, Eq)]
@@ -37,6 +39,7 @@ pub struct Overview {
     messages: Vec<MailMessageMetadata>,
     sender: Sender<Action>,
     loading: bool,
+    search_query: String,
 }
 
 impl Component for Overview {
@@ -73,6 +76,7 @@ impl Component for Overview {
             selected: Default::default(),
             sender: wss.sender,
             loading: true,
+            search_query: String::new(),
         }
     }
 
@@ -129,6 +133,9 @@ impl Component for Overview {
                     self.messages.clear();
                 }
             }
+            Msg::Search(query) => {
+                self.search_query = query;
+            }
         };
 
         true
@@ -141,6 +148,7 @@ impl Component for Overview {
 
     fn view(&self, ctx: &Context<Self>) -> Html {
         let link = ctx.link();
+        let filtered_messages = self.filtered_messages();
         let selected_message = self.messages.iter().find(|m| m.id == self.selected);
         let selected_id = self.selected.clone();
 
@@ -149,6 +157,20 @@ impl Component for Overview {
             <header>
               <h1>{"Mail"}<span>{"Crab"}</span></h1>
               <div>
+                <input
+                  type="search"
+                  placeholder="Search mail…"
+                  aria-label="Search mail"
+                  class="search"
+                  oninput={link.callback(|e: InputEvent| {
+                    let query = e
+                        .target()
+                        .and_then(|t| t.dyn_into::<HtmlInputElement>().ok())
+                        .map(|el| el.value())
+                        .unwrap_or_default();
+                    Msg::Search(query)
+                  })}
+                />
                 if !self.messages.is_empty() {
                   <button onclick={link.callback(|_| Msg::RemoveAll)}>
                     {"Remove all"}<span>{"("}{self.messages.len()}{")"}</span>
@@ -174,13 +196,19 @@ impl Component for Overview {
             } else {
               <div class="main">
                 <div class="list">
-                    <ul>
-                        <MessageList
-                            messages={self.messages.clone()}
-                            selected={self.selected.clone()}
-                            select={link.callback(Msg::Select)}
-                        />
-                    </ul>
+                    if filtered_messages.is_empty() {
+                        <div class="no-results" role="status">
+                            {"No messages match your search"}
+                        </div>
+                    } else {
+                        <ul>
+                            <MessageList
+                                messages={filtered_messages}
+                                selected={self.selected.clone()}
+                                select={link.callback(Msg::Select)}
+                            />
+                        </ul>
+                    }
                 </div>
                 <div class="view">
                     if let Some(message) = selected_message {
@@ -196,5 +224,37 @@ impl Component for Overview {
             }
           </>
         }
+    }
+}
+
+impl Overview {
+    fn filtered_messages(&self) -> Vec<MailMessageMetadata> {
+        let query = self.search_query.trim().to_lowercase();
+        if query.is_empty() {
+            return self.messages.clone();
+        }
+
+        self.messages
+            .iter()
+            .filter(|m| {
+                m.from
+                    .name
+                    .as_deref()
+                    .unwrap_or("")
+                    .to_lowercase()
+                    .contains(&query)
+                    || m.from
+                        .email
+                        .as_deref()
+                        .unwrap_or("")
+                        .to_lowercase()
+                        .contains(&query)
+                    || m.subject.to_lowercase().contains(&query)
+                    || m.envelope_recipients
+                        .iter()
+                        .any(|r| r.to_lowercase().contains(&query))
+            })
+            .cloned()
+            .collect()
     }
 }

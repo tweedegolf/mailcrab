@@ -56,6 +56,10 @@ Open a browser and navigate to [http://localhost:1080](http://localhost:1080) to
 
 There are also (single) binary builds available, see https://github.com/tweedegolf/mailcrab/releases
 
+[Easypanel](https://easypanel.io) is a self-hosted Docker deployment platform, and it maintains a one-click deployment template for MailCrab:
+
+[![Deploy on Easypanel](https://easypanel.io/img/deploy-on-easypanel-40.svg)](https://easypanel.io/templates/mailcrab)
+
 ### Ports
 
 The default SMTP port is 1025, the default HTTP port is 1080. You can configure the SMTP and HTTP port using environment variables (`SMTP_PORT` and `HTTP_PORT`), or by exposing them on different ports using docker:

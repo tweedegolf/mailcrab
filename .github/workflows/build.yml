@@ -70,6 +70,19 @@ jobs:
               }
             }
 
+      - name: Check crate existence
+        id: crate_check
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          status=$(curl -sS -o /dev/null -w '%{http_code}' -A 'mailcrab-ci (https://github.com/tweedegolf/mailcrab)' "https://crates.io/api/v1/crates/mailcrab/$VERSION")
+          case "$status" in
+            200) echo "crate_exists=true" >> "$GITHUB_OUTPUT" ;;
+            404) echo "crate_exists=false" >> "$GITHUB_OUTPUT" ;;
+            *) echo "Unexpected crates.io status $status" >&2; exit 1 ;;
+          esac
+
       - name: Check tag state
         id: tag_check
         shell: bash
@@ -94,6 +107,7 @@ jobs:
         shell: bash
         env:
           RELEASE_EXISTS: ${{ steps.release_check.outputs.release_exists }}
+          CRATE_EXISTS: ${{ steps.crate_check.outputs.crate_exists }}
           TAG_EXISTS: ${{ steps.tag_check.outputs.tag_exists }}
           TAG_MATCHES_HEAD: ${{ steps.tag_check.outputs.tag_matches_head }}
         run: |
@@ -101,6 +115,10 @@ jobs:
 
           if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF" == "refs/heads/main" ]]; then
             if [[ "$RELEASE_EXISTS" == "true" ]]; then
+              should_release=false
+            elif [[ "$CRATE_EXISTS" == "true" ]]; then
+              # crates.io publishes can't be repeated, so a half-finished release is not retried
+              echo "::warning::mailcrab ${{ steps.version.outputs.version }} is on crates.io but has no GitHub release"
               should_release=false
             elif [[ "$TAG_EXISTS" == "false" || "$TAG_MATCHES_HEAD" == "true" ]]; then
               should_release=true

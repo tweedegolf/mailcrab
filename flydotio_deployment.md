@@ -54,32 +54,24 @@ touch fly.toml
 [build]
   image = "marlonb/mailcrab:latest"
 
-[[services]]
-  protocol = "tcp"
+# web interface
+[http_service]
   internal_port = 1080
-  processes = ["app"]
-  auto_stop_machines = true
+  force_https = true
+  auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 0
 
-  [[services.ports]]
-    force_https = true
-    handlers = ["http"]
-    port = 80
-
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 443
-
-  [services.concurrency]
+  [http_service.concurrency]
     type = "connections"
     hard_limit = 25
     soft_limit = 20
 
+# SMTP server
 [[services]]
   protocol = "tcp"
   internal_port = 1025
-  auto_stop_machines = true
+  auto_stop_machines = "stop"
   auto_start_machines = true
   min_machines_running = 0
 
@@ -92,32 +84,40 @@ touch fly.toml
     soft_limit = 20
 ```
 
+MailCrab keeps all messages in memory, so they are gone once the machine is stopped. Set `auto_stop_machines = "off"`
+in both sections if you want to keep the messages around while MailCrab is idle.
+
 ### 4. Deploy Mailcrab
 
 - Run the below command in the folder where your fly.toml config file is located, and follow the steps.
 
 ```
-fly launch --ha=false
+fly launch --copy-config --ha=false --no-db --no-redis --no-object-storage
 ```
 
-- Say no to these options
+The app name and region are added to your fly.toml by `fly launch`. MailCrab does not need a database, Redis or
+object storage, and `--ha=false` makes sure only a single machine is created (messages are not shared between machines).
+
+- Allocate an IP address for the SMTP server
+
+The web interface is reachable on the shared IPv4 address and the IPv6 address that fly.io assigns on the first deploy.
+The SMTP server is a plain TCP service on port 1025 and is not reachable on a shared IPv4 address. Check the
+addresses of your app using:
 
 ```
-? Would you like to set up a Postgresql database now? No
-? Would you like to set up an Upstash Redis database now? No
-? Would you like to allocate dedicated ipv4 and ipv6 addresses now? No
+fly ips list
 ```
 
-- Allocate shared ipv4 address
-
-```
-fly ips allocate-v4 --shared
-```
-
-- Allocate ipv6 address
+Make sure there is an IPv6 address (free):
 
 ```
 fly ips allocate-v6
+```
+
+If you need to reach the SMTP server over IPv4, allocate a dedicated IPv4 address (billed monthly):
+
+```
+fly ips allocate-v4
 ```
 
 ### That's it!

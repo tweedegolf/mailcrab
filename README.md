@@ -21,7 +21,7 @@ docker run --rm -p 1080:1080 -p 1025:1025 marlonb/mailcrab:latest
 - View formatted mail, download attachments, view headers or the complete raw mail contents
 - Single binary
 - Runs on all `amd64` and `arm64` platforms using docker
-- Just a 7.77 MB docker image
+- Just a 5.66 MB docker image
 
 ![MailCrab screenshot](https://raw.githubusercontent.com/tweedegolf/mailcrab/main/frontend/img/screen.png)
 
